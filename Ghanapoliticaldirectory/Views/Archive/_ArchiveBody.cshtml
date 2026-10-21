@@ -2,7 +2,9 @@
 @{
     ViewData["Title"] = "History & Archives";
     ViewData["Nav"] = "archive";
-    var a = Model.Selected;
+    var a = Model.Selected
+   ?? throw new InvalidOperationException(
+        "The selected administration was not provided.");
     var b = Model.Compare;
     var maxSeats = Math.Max(1, Model.SeatsSelected
         .Select(s => s.Seats)
@@ -138,7 +140,30 @@
                     </tbody>
                 </table>
             </div>
-            @if (Model.SeatsCompare is not null)
+            @if (Model.SeatsCompare?.Any() == true)
+                        {
+                            var maxCompareSeats = Math.Max(
+                                maxSeats,
+                                Model.SeatsCompare.Max(s => s.Seats)
+                            );
+
+                            <div class="row g-4">
+                                <div class="col-lg-6">
+                                    <h3 class="gpd-h3">@a.Name</h3>
+                                    @await Html.PartialAsync(
+                                        "_SeatsTable",
+                                        new SeatsModel(Model.SeatsSelected, maxCompareSeats))
+                                </div>
+
+                                <div class="col-lg-6">
+                                    <h3 class="gpd-h3">@b!.Name</h3>
+                                    @await Html.PartialAsync(
+                                        "_SeatsTable",
+                                        new SeatsModel(Model.SeatsCompare, maxCompareSeats))
+                                </div>
+                            </div>
+                        }
+            @* @if (Model.SeatsCompare is not null)
             {
                 <div class="row g-4">
                     <div class="col-lg-6">
@@ -150,7 +175,7 @@
                         @await Html.PartialAsync("_SeatsTable", new SeatsModel(Model.SeatsCompare, Math.Max(maxSeats, Model.SeatsCompare.Max(s => s.Seats))))
                     </div>
                 </div>
-            }
+            } *@
         }
     </div>
 </section>

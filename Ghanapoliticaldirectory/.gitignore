@@ -1,0 +1,11 @@
+# Ignore application settings and secrets
+**/appsettings.json
+**/appsettings.*.json
+
+# Allow a safe example configuration
+!**/appsettings.example.json
+
+# Application configuration and secrets
+**/appsettings.json
+**/appsettings.*.json
+!**/appsettings.Development.json
