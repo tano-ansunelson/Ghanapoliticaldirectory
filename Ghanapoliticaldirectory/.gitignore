@@ -6,6 +6,6 @@
 !**/appsettings.example.json
 
 # Application configuration and secrets
-**/appsettings.json
-**/appsettings.*.json
-!**/appsettings.Development.json
+#**/appsettings.json
+#**/appsettings.*.json
+#!**/appsettings.Development.json

@@ -3,6 +3,7 @@ using Ghanapoliticaldirectory.Data;
 using Ghanapoliticaldirectory.Domain;
 using Ghanapoliticaldirectory.Models;
 using Ghanapoliticaldirectory.Service.Business;
+using Ghanapoliticaldirectory.Service.Business.Export;
 using Ghanapoliticaldirectory.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -25,6 +26,7 @@ public class AdminDataController : Controller
     private readonly ImportService _import;
     private readonly PersonService _people;
     private readonly PhotoService _photos;
+    private readonly ExportService _export;
     public IActionResult Index()
     {
         return View();
@@ -32,9 +34,9 @@ public class AdminDataController : Controller
 
     public AdminDataController(IDirectoryReader data, AdminQueries queries, ReferenceDataService reference,
         CandidateService candidates, ResultService results, GovernmentService government, UserManager<ApplicationUser> users, ImportService import,
-        PersonService people, PhotoService photos
+        PersonService people, PhotoService photos, ExportService export
         )
-    { _photos = photos; _people = people; _import = import; _data = data; _queries = queries; _reference = reference; _candidates = candidates; _results = results; _government = government; _users = users; }
+    { _export = export; _photos = photos; _people = people; _import = import; _data = data; _queries = queries; _reference = reference; _candidates = candidates; _results = results; _government = government; _users = users; }
 
     private static int? Int(string? s) => int.TryParse(s, out var i) ? i : null;
 
@@ -331,6 +333,27 @@ public class AdminDataController : Controller
             isUrl ? null : src, isUrl ? src : null, ct);
         return Back(id, r, "Party change saved. The earlier party stays on record with its dates.");
     }
+
+    // ----- Export to Excel -----------------------------------------------------------------
+
+    [HttpGet("export")]
+    public IActionResult Export() => View();
+
+    [HttpPost("export")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Export(string? scope, CancellationToken ct)
+    {
+        var chosen = scope == "published" ? ExportScope.PublishedOnly : ExportScope.Everything;
+        var r = await _export.BuildAsync(chosen, ct);
+        if (!r.Ok)
+        {
+            AddErrors(r);
+            return View();
+        }
+        return File(r.Value!.Content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", r.Value.FileName);
+    }
+
+
 
     // ----- Import people and positions from Excel ------------------------------------------
 

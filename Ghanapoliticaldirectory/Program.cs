@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Ghanapoliticaldirectory.Services;
 using Ghanapoliticaldirectory.Service.Business;
+using Ghanapoliticaldirectory.Service.Business.Export;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -68,6 +69,7 @@ builder.Services.AddScoped<PhotoService>();
 builder.Services.AddScoped<ReferenceDataService>();
 builder.Services.AddScoped<AdminQueries>();
 builder.Services.AddScoped<ImportService>();
+builder.Services.AddScoped<ExportService>();
 builder.Services.AddScoped<IDirectoryReader, EfDirectoryReader>();
 
 var app = builder.Build();

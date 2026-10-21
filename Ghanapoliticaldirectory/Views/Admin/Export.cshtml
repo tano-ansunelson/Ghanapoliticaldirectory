@@ -1,0 +1,41 @@
+﻿@{ ViewData["Title"] = "Export to Excel"; }
+<div class="gpd-admin-pagehead"><div>
+    <h1 class="gpd-h1">Export to Excel</h1>
+    <p class="gpd-muted mb-0">Download the directory as one Excel workbook. It is a copy: nothing in the system changes. Each export is recorded in the audit log.</p>
+</div></div>
+
+<div class="row g-4">
+<div class="col-lg-7">
+    <section class="gpd-panel">
+        <h2 class="gpd-h3">Choose what to export</h2>
+        <form method="post" asp-action="Export" novalidate>
+            <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+            <fieldset class="mb-3">
+                <legend class="visually-hidden">What to include</legend>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="scope" id="scope-all" value="all" checked />
+                    <label class="form-check-label" for="scope-all"><strong>Everything</strong> (including drafts and records still being reviewed). The <em>Stage</em> column shows where each record is.</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="scope" id="scope-pub" value="published" />
+                    <label class="form-check-label" for="scope-pub"><strong>Published only</strong>: exactly what visitors see on the public site.</label>
+                </div>
+            </fieldset>
+            <button class="btn btn-gpd" type="submit"><i class="bi bi-download" aria-hidden="true"></i> Download Excel file</button>
+        </form>
+    </section>
+</div>
+<div class="col-lg-5">
+    <section class="gpd-panel">
+        <h2 class="gpd-h3">What is in the file</h2>
+        <ul class="mb-2">
+            <li><strong>People</strong>: name, stage, party today, biography</li>
+            <li><strong>Positions</strong>: each appointment with dates, ministry, administration, status</li>
+            <li><strong>Parliament</strong>: each term in a constituency</li>
+            <li><strong>Party History</strong>: each party membership with dates</li>
+            <li><strong>Candidates</strong>: who stood in each contest, with party</li>
+            <li><strong>Results</strong>: votes per candidate and the contest totals</li>
+        </ul>
+        <p class="gpd-muted small mb-0">Archived records are left out. Dates are written as yyyy-MM-dd. The People, Positions and Parliament sheets use a Person Id so rows can be matched. This file is for reading and reports. To add people, use the Import template.</p>
+    </section>
+</div></div>
