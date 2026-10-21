@@ -16,8 +16,8 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Restore
-        run: dotnet restore Ghanapoliticaldirectory.sln
+      - name: Restore dependencies
+        run: dotnet restore Ghanapoliticaldirectory.slnx
 
       - name: Build
         run: dotnet build Ghanapoliticaldirectory.sln --configuration Release --no-restore
