@@ -20,11 +20,11 @@ jobs:
         run: dotnet restore Ghanapoliticaldirectory.slnx
 
       - name: Build
-        run: dotnet build Ghanapoliticaldirectory.sln --configuration Release --no-restore
+        run: dotnet build Ghanapoliticaldirectory.slnx --configuration Release --no-restore
 
       # Runs only if you add a test project to the solution later.
       - name: Test
-        run: dotnet test Ghanapoliticaldirectory.sln --configuration Release --no-build --verbosity normal
+        run: dotnet test Ghanapoliticaldirectory.slnx --configuration Release --no-build --verbosity normal
 
       - name: Publish
         run: dotnet publish Ghanapoliticaldirectory/Ghanapoliticaldirectory.csproj --configuration Release --no-build --output ./publish
