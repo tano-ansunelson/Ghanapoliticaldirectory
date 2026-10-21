@@ -1,0 +1,31 @@
+﻿@model IReadOnlyList<SourceRef>
+@if (Model.Count == 0)
+{
+    <p class="gpd-muted">No sources recorded yet.</p>
+}
+else
+{
+    <ul class="gpd-sources list-unstyled">
+        @foreach (var s in Model)
+        {
+            <li>
+                <i class="bi bi-link-45deg" aria-hidden="true"></i>
+                <div>
+                    @if (s.Url is not null)
+                    {
+                        <a href="@s.Url" target="_blank" rel="noopener noreferrer">@s.Title<span class="visually-hidden"> (opens in a new tab)</span></a>
+                    }
+                    else
+                    {
+                        <span>@s.Title</span>
+                    }
+                    <div class="gpd-source-meta">
+                        @if (s.PublishedOn is not null) { <span>Published @UiHelpers.Date(s.PublishedOn.Value)</span> }
+                        @if (s.LastChecked is not null) { <span>Last checked @UiHelpers.Date(s.LastChecked.Value)</span> }
+                        <span>@s.VerificationStatus</span>
+                    </div>
+                </div>
+            </li>
+        }
+    </ul>
+}

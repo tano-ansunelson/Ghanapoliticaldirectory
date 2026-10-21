@@ -1,0 +1,12 @@
+﻿@model PortraitModel
+@* Real photographs get descriptive alt text; placeholders are announced as placeholders. *@
+@if (!string.IsNullOrEmpty(Model.PhotoUrl))
+{
+    <img class="gpd-portrait gpd-portrait--@Model.Size" src="@Model.PhotoUrl" alt="Portrait of @Model.Name" loading="lazy" />
+}
+else
+{
+    <div class="gpd-portrait gpd-portrait--@Model.Size gpd-portrait--ph" role="img" aria-label="Photograph placeholder for @Model.Name">
+        <span aria-hidden="true">@UiHelpers.Initials(Model.Name)</span>
+    </div>
+}

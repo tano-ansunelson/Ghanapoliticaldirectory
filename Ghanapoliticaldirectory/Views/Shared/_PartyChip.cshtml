@@ -1,0 +1,12 @@
+﻿@model PartyChipModel
+@* Every party uses the same neutral chip. Colour is never used to rank or favour a party. *@
+@if (Model.Party is null)
+{
+    <span class="gpd-chip gpd-chip--none">Independent</span>
+}
+else
+{
+    <a class="gpd-chip" asp-controller="Parties" asp-action="Details" asp-route-id="@Model.Party.Id" title="@Model.Party.Name">
+        @(Model.ShowName ? $"{Model.Party.Name} ({Model.Party.Abbreviation})" : Model.Party.Abbreviation)
+    </a>
+}

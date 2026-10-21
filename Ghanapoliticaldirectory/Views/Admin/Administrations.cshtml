@@ -1,0 +1,41 @@
+﻿@model AdministrationsPageModel
+@{ ViewData["Title"] = "Administrations"; var f = Model.Form; }
+<div class="gpd-admin-pagehead"><div>
+    <h1 class="gpd-h1">Administrations</h1>
+    <p class="gpd-muted mb-0">An administration is separate from an election. It is shown as fact only once confirmed and published.</p>
+</div></div>
+<div class="row g-4">
+<div class="col-lg-4"><section class="gpd-panel">
+    <h2 class="gpd-h3">Add an administration</h2>
+    <form method="post" asp-action="Administrations" novalidate>
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+        <div class="mb-3"><label class="form-label" for="Name">Name <span class="gpd-req">*</span></label>
+            <input class="form-control" id="Name" name="Name" value="@f.Name" /></div>
+        <div class="mb-3"><label class="form-label" for="Start">Start date <span class="gpd-req">*</span></label>
+            <input class="form-control" id="Start" name="Start" type="date" value="@f.Start?.ToString("yyyy-MM-dd")" /></div>
+        <div class="mb-3"><label class="form-label" for="ElectionCycleId">Election that produced it</label>
+            <select class="form-select" id="ElectionCycleId" name="ElectionCycleId"><option value="">None / transitional</option>
+            @foreach (var c in Model.Cycles) { <option value="@c.Value" selected="@(c.Value == f.ElectionCycleId)">@c.Text</option> }</select></div>
+        <div class="mb-3"><label class="form-label" for="Description">Description</label>
+            <textarea class="form-control" id="Description" name="Description" rows="2">@f.Description</textarea></div>
+        <button class="btn btn-gpd" type="submit">Save as unconfirmed</button>
+    </form>
+</section></div>
+<div class="col-lg-8"><section class="gpd-panel">
+@if (Model.Rows.Count == 0) { <p class="gpd-muted mb-0">None yet.</p> }
+else {
+<div class="table-responsive"><table class="table gpd-table align-middle">
+<caption class="visually-hidden">Administrations</caption>
+<thead><tr><th scope="col">Name</th><th scope="col">Period</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead><tbody>
+@foreach (var a in Model.Rows) {
+<tr><th scope="row">@a.Name<div class="small gpd-muted">@a.Cycle</div></th>
+<td>@a.Start.ToString("d MMM yyyy") – @(a.End?.ToString("d MMM yyyy") ?? "present")</td>
+<td>@(a.IsConfirmed ? "Confirmed" : "Unconfirmed") · @a.Stage</td>
+<td>
+@if (!a.IsConfirmed) { <form asp-action="ConfirmAdministration" asp-route-id="@a.Id" method="post" class="d-inline"><button class="btn btn-sm btn-outline-secondary" type="submit">Confirm</button></form> }
+@if (a.End is null) { <form asp-action="CloseAdministration" asp-route-id="@a.Id" method="post" class="d-inline-flex gap-1">
+  <input class="form-control form-control-sm" type="date" name="endDate" aria-label="End date for @a.Name" required />
+  <button class="btn btn-sm btn-outline-danger" type="submit">Close</button></form> }
+</td></tr> }
+</tbody></table></div> }
+</section></div></div>

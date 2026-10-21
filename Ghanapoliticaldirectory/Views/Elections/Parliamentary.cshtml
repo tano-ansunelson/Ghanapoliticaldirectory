@@ -1,0 +1,100 @@
+﻿@model ParliamentaryPageModel
+@{
+    var c = Model.Selected;
+    ViewData["Title"] = c.Name + " · Parliamentary";
+    ViewData["Nav"] = "elections";
+    var status = Model.Result?.Status ?? ResultStatus.NotPublished;
+    var vd = new ViewDataDictionary(ViewData);
+    vd["ResultStatus"] = status;
+}
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel("Parliamentary elections: " + c.Year,
+    "Choose an election year, then a region, then a constituency to see every recorded candidate and, once published, the verified result.",
+    new[] { new Link("Elections", "/elections/presidential") }))
+
+<section class="gpd-section">
+    <div class="container">
+        <div class="gpd-election-bar">
+            @await Html.PartialAsync("_CycleSwitcher", new CycleSwitcherModel(Model.Cycles, c.Year, "Parliamentary", Model.RegionId, Model.ConstituencyId))
+            <a class="gpd-link-arrow" asp-controller="Elections" asp-action="Presidential" asp-route-year="@c.Year">
+                Presidential election for @c.Year <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            </a>
+        </div>
+
+        <form class="gpd-filters" method="get" asp-controller="Elections" asp-action="Parliamentary" aria-label="Find a constituency"
+              data-dependent-form data-constituency-url="@Url.Action("Constituencies", "Elections")">
+            <input type="hidden" name="year" value="@c.Year" />
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    @await Html.PartialAsync("_SelectField", new SelectFieldModel("regionId", "1. Region", Model.Regions, Model.RegionId?.ToString(), "Choose a region", Role: "region"))
+                </div>
+                <div class="col-md-4">
+                    @await Html.PartialAsync("_SelectField", new SelectFieldModel("constituencyId", "2. Constituency", Model.Constituencies,
+                        Model.ConstituencyId?.ToString(), Model.RegionId is null ? "Choose a region first" : "Choose a constituency",
+                        Disabled: Model.RegionId is null, Role: "constituency", Help: "Only constituencies in the selected region are listed."))
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button class="btn btn-gpd" type="submit">Show candidates</button>
+                    @if (Model.RegionId is not null)
+                    {
+                        <a class="btn btn-outline-secondary" asp-action="Parliamentary" asp-route-year="@c.Year">Reset</a>
+                    }
+                </div>
+            </div>
+        </form>
+
+        @if (Model.ConstituencyId is null)
+        {
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-geo-alt",
+                Model.RegionId is null ? "Select a region to begin" : "Now select a constituency in " + Model.RegionName,
+                "Candidates and results are stored separately for every constituency and election year."))
+        }
+        else
+        {
+            <nav aria-label="Selection" class="gpd-selection">
+                <span>@c.Year</span><i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span>@Model.RegionName Region</span><i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <strong>@Model.ConstituencyName</strong>
+            </nav>
+
+            <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+                <h2 class="gpd-h2 mb-0">Candidates in @Model.ConstituencyName</h2>
+                @await Html.PartialAsync("_StatusBadge", status)
+            </div>
+
+            @if (Model.Candidates.Count == 0)
+            {
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-person-badge", "Candidates not yet published",
+                    "No candidates are recorded for this constituency in this election."))
+            }
+            else
+            {
+                <p class="gpd-muted">All recorded candidates are listed alphabetically.</p>
+                <div class="row g-3">
+                    @foreach (var cand in Model.Candidates)
+                    {
+                        <div class="col-md-6 col-xl-3">@await Html.PartialAsync("_CandidateCard", cand, vd)</div>
+                    }
+                </div>
+            }
+        }
+    </div>
+</section>
+
+@if (Model.ConstituencyId is not null)
+{
+    <section class="gpd-section gpd-section--white" id="results">
+        <div class="container">
+            @if (Model.Result is null)
+            {
+                <h2 class="gpd-h2">Election results</h2>
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-hourglass", "Results not yet published",
+                    "No results are shown for this constituency yet. Vote totals and a winner appear only after official publication and verification."))
+            }
+            else
+            {
+                @await Html.PartialAsync("_ResultsTable", new ResultsTableModel("Constituency", Model.Candidates, Model.Result))
+                <p class="gpd-muted small">Parliamentary results are stored per constituency and are never combined with presidential results.</p>
+            }
+        </div>
+    </section>
+}

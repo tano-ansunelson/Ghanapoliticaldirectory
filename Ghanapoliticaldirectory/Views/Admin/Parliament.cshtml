@@ -1,0 +1,44 @@
+﻿@model TermsListModel
+@{
+    ViewData["Title"] = "Parliament";
+}
+<div class="gpd-admin-pagehead">
+    <div>
+        <h1 class="gpd-h1">Parliament</h1>
+        <p class="gpd-muted mb-0">Members of Parliament by term. To add one, use <a asp-action="AddPerson">Add person</a> and tick Member of Parliament. To end a term, open the person.</p>
+    </div>
+</div>
+<section class="gpd-panel">
+    <form method="get" class="mb-3"><div class="input-group" style="max-width:28rem"><input class="form-control" type="search" name="q" value="@Model.Q" placeholder="Search by name or constituency" aria-label="Search" /><button class="btn btn-outline-secondary" type="submit">Search</button></div></form>
+    @if (Model.Rows.Count == 0)
+    {
+        <p class="gpd-muted mb-0">Nothing found.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table gpd-table align-middle">
+                <caption class="visually-hidden">Parliamentary terms</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Member</th>
+                        <th scope="col">Constituency</th>
+                        <th scope="col">Period</th>
+                        <th scope="col">Review</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in Model.Rows)
+                    {
+                        <tr>
+                            <th scope="row"><a asp-action="Person" asp-route-id="@t.PersonId">@t.Person</a></th>
+                            <td>@t.Constituency <span class="gpd-muted">· @t.Region</span></td>
+                            <td>@t.Start.ToString("d MMM yyyy") – @(t.End?.ToString("d MMM yyyy") ?? "present")</td>
+                            <td>@t.Stage</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

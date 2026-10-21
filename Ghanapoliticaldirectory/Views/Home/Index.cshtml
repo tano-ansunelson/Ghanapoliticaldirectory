@@ -1,0 +1,260 @@
+﻿@model HomeViewModel
+@{
+    ViewData["Title"] = "Explore Ghana's Political Leadership";
+    ViewData["Nav"] = "home";
+
+    var categories = new (string Title, string Text, string Icon, string Controller, string Action)[]
+    {
+        ("Presidency", "Presidents and vice presidents, administration by administration.", "bi-bank", "Presidency", "Index"),
+        ("Parliament", "Members of Parliament by term, region, constituency and party.", "bi-people", "Parliament", "Index"),
+        ("Elections", "Candidates and verified results for presidential and parliamentary elections.", "bi-bar-chart-line", "Elections", "Presidential"),
+        ("Political Parties", "Every registered party with its people, candidates and election history.", "bi-flag", "Parties", "Index"),
+        ("Ministries", "Ministers, deputies and the history of each ministry.", "bi-briefcase", "Ministries", "Index"),
+        ("Government Offices", "Public offices that do not belong to a ministry.", "bi-building", "Ministries", "Offices"),
+        ("Historical Administrations", "Browse and compare earlier governments and their officeholders.", "bi-clock-history", "Archive", "Index")
+    };
+
+    var quickLinks = new (string Label, string Controller, string Action)[]
+    {
+        ("Elections", "Elections", "Presidential"),
+        ("Parliament", "Parliament", "Index"),
+        ("Ministries", "Ministries", "Index"),
+        ("Political Parties", "Parties", "Index"),
+        ("Historical Archives", "Archive", "Index")
+    };
+}
+
+@* ---------------------------------------------------------------- B. Hero *@
+<section class="gpd-hero" aria-labelledby="hero-title">
+    <div class="container">
+        <p class="gpd-eyebrow">Independent political information platform</p>
+        <h1 id="hero-title" class="gpd-hero-title">Explore Ghana's Political Leadership</h1>
+        <p class="gpd-hero-text">
+            Discover political leaders, election candidates, government ministries, official election results,
+            and Ghana's political history in one place.
+        </p>
+
+        <form class="gpd-hero-search" asp-controller="Search" asp-action="Index" method="get" role="search">
+            <div class="gpd-hero-field">
+                <label for="hero-q" class="visually-hidden">Search for a politician, constituency, ministry, or election</label>
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input id="hero-q" name="q" type="search" autocomplete="off" data-suggest
+                       placeholder="Search for a politician, constituency, ministry, or election..." />
+            </div>
+            <button class="btn gpd-btn-gold" type="submit">Search</button>
+        </form>
+        <p class="gpd-hero-try">
+            Try:
+            <a asp-controller="Search" asp-action="Index" asp-route-q="Ministry of Health">Ministry of Health</a>
+            <a asp-controller="Search" asp-action="Index" asp-route-q="Ashanti">Ashanti Region</a>
+            <a asp-controller="Search" asp-action="Index" asp-route-q="Member of Parliament">Member of Parliament</a>
+            <a asp-controller="Search" asp-action="Index" asp-route-q="2024">2024</a>
+        </p>
+
+        <ul class="gpd-quicklinks list-unstyled" aria-label="Quick links">
+            @foreach (var q in quickLinks)
+            {
+                <li><a asp-controller="@q.Controller" asp-action="@q.Action">@q.Label <i class="bi bi-arrow-right" aria-hidden="true"></i></a></li>
+            }
+        </ul>
+    </div>
+</section>
+
+@* ---------------------------------------------------------------- C. Explore by category *@
+<section class="gpd-section" aria-labelledby="cat-title">
+    <div class="container">
+        <h2 id="cat-title" class="gpd-h2">Explore by category</h2>
+        <p class="gpd-muted gpd-section-lead">Every section is built from sourced, dated records so you can look at any period, not only today.</p>
+        <div class="row g-3 gpd-cat-grid">
+            @foreach (var c in categories)
+            {
+                <div class="col-sm-6 col-lg-4 col-xl-3">
+                    <a class="gpd-cat-card" asp-controller="@c.Controller" asp-action="@c.Action">
+                        <span class="gpd-cat-icon" aria-hidden="true"><i class="bi @c.Icon"></i></span>
+                        <span class="gpd-cat-title">@c.Title</span>
+                        <span class="gpd-cat-text">@c.Text</span>
+                        <span class="gpd-cat-go">Explore <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+@* ---------------------------------------------------------------- D. Election information *@
+<section class="gpd-section gpd-section--white" aria-labelledby="elec-title">
+    <div class="container">
+        <div class="gpd-section-head">
+            <div>
+                <h2 id="elec-title" class="gpd-h2">Election information</h2>
+                <p class="gpd-muted mb-0">Select an election cycle. Results appear only after they are verified against the official source.</p>
+            </div>
+        </div>
+
+        <ul class="nav nav-pills gpd-pills" id="cycleTabs" role="tablist">
+            @for (var i = 0; i < Model.Cycles.Count; i++)
+            {
+                var c = Model.Cycles[i];
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(i == 0 ? "active" : "")" id="cycle-tab-@c.Id" data-bs-toggle="pill" data-bs-target="#cycle-@c.Id"
+                            type="button" role="tab" aria-controls="cycle-@c.Id" aria-selected="@(i == 0 ? "true" : "false")">
+                        @c.Name
+                    </button>
+                </li>
+            }
+        </ul>
+
+        <div class="tab-content">
+            @for (var i = 0; i < Model.Cycles.Count; i++)
+            {
+                var c = Model.Cycles[i];
+                var anyResults = c.PresidentialStatus != ResultStatus.NotPublished || c.ParliamentaryStatus != ResultStatus.NotPublished;
+                <div class="tab-pane fade @(i == 0 ? "show active" : "")" id="cycle-@c.Id" role="tabpanel" aria-labelledby="cycle-tab-@c.Id" tabindex="0">
+                    <div class="gpd-cycle-panel">
+                        <div class="gpd-cycle-panel-head">
+                            <h3 class="gpd-h3 mb-0">@c.Name</h3>
+                            <span class="gpd-badge @(c.Phase == ElectionPhase.Completed ? "gpd-badge--published" : "gpd-badge--none")">
+                                <i class="bi @(c.Phase == ElectionPhase.Completed ? "bi-check2-circle" : "bi-calendar-event")" aria-hidden="true"></i>
+                                @(c.Phase == ElectionPhase.Completed ? "Completed" : c.Phase == ElectionPhase.CandidatesPublished ? "Candidates published" : "Upcoming")
+                            </span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6 col-xl-3">
+                                <a class="gpd-tile" asp-controller="Elections" asp-action="Presidential" asp-route-year="@c.Year">
+                                    <i class="bi bi-person-badge" aria-hidden="true"></i>
+                                    <span class="gpd-tile-title">Presidential candidates</span>
+                                    <span class="gpd-tile-status">@(c.CandidatesPublished ? "Candidates published" : "Candidates not yet published")</span>
+                                </a>
+                            </div>
+                            <div class="col-md-6 col-xl-3">
+                                <a class="gpd-tile" asp-controller="Elections" asp-action="Parliamentary" asp-route-year="@c.Year">
+                                    <i class="bi bi-people" aria-hidden="true"></i>
+                                    <span class="gpd-tile-title">Parliamentary candidates</span>
+                                    <span class="gpd-tile-status">@(c.CandidatesPublished ? "Candidates published" : "Candidates not yet published")</span>
+                                </a>
+                            </div>
+                            <div class="col-md-6 col-xl-3">
+                                <a class="gpd-tile" asp-controller="Elections" asp-action="Parliamentary" asp-route-year="@c.Year">
+                                    <i class="bi bi-geo-alt" aria-hidden="true"></i>
+                                    <span class="gpd-tile-title">Parliamentary constituencies</span>
+                                    <span class="gpd-tile-status">Browse by region</span>
+                                </a>
+                            </div>
+                            <div class="col-md-6 col-xl-3">
+                                <a class="gpd-tile" asp-controller="Elections" asp-action="Presidential" asp-route-year="@c.Year" asp-fragment="results">
+                                    <i class="bi bi-clipboard-data" aria-hidden="true"></i>
+                                    <span class="gpd-tile-title">Published election results</span>
+                                    @if (!anyResults)
+                                    {
+                                        <span class="gpd-tile-status">Results not yet published</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="gpd-tile-badges">
+                                            <span class="gpd-tile-badge-label">Presidential</span>
+                                            @await Html.PartialAsync("_StatusBadge", c.PresidentialStatus)
+                                            <span class="gpd-tile-badge-label">Parliamentary</span>
+                                            @await Html.PartialAsync("_StatusBadge", c.ParliamentaryStatus)
+                                        </span>
+                                    }
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <p class="gpd-notice-inline">
+            <i class="bi bi-shield-check" aria-hidden="true"></i>
+            Unofficial figures are never presented as official results. Each result shows its status, source and verification date.
+        </p>
+    </div>
+</section>
+
+@* ---------------------------------------------------------------- E. Current government *@
+@if (Model.CurrentAdministration is not null)
+{
+    <section class="gpd-section" aria-labelledby="gov-title">
+        <div class="container">
+            <div class="gpd-section-head">
+                <div>
+                    <h2 id="gov-title" class="gpd-h2">Current government</h2>
+                    <p class="gpd-muted mb-0">
+                        @Model.CurrentAdministration.Name · since @UiHelpers.Date(Model.CurrentAdministration.Start)
+                    </p>
+                </div>
+                <a class="gpd-link-arrow" asp-controller="Presidency" asp-action="Index">All administrations <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+            </div>
+            <div class="row g-3">
+                @foreach (var p in Model.Government)
+                {
+                    <div class="col-md-6 col-xl-4">@await Html.PartialAsync("_PersonCard", p)</div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+@* ---------------------------------------------------------------- F. Historical archives *@
+<section class="gpd-section gpd-section--white" aria-labelledby="hist-title">
+    <div class="container">
+        <div class="gpd-section-head">
+            <div>
+                <h2 id="hist-title" class="gpd-h2">Historical archives</h2>
+                <p class="gpd-muted mb-0">Earlier administrations are preserved with their officeholders, appointment dates and election records.</p>
+            </div>
+            <a class="gpd-link-arrow" asp-controller="Archive" asp-action="Index">Compare administrations <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+        </div>
+        <ol class="gpd-archive-list list-unstyled">
+            @foreach (var a in Model.Administrations)
+            {
+                <li>
+                    <a class="gpd-archive-card" asp-controller="Archive" asp-action="Index" asp-route-administrationId="@a.Id">
+                        <span class="gpd-archive-dates">@a.Start.Year – @(a.End is null ? "present" : a.End.Value.Year.ToString())</span>
+                        <span class="gpd-archive-name">@a.Name</span>
+                        <span class="gpd-archive-meta">@(a.ElectionYear is int ey ? $"Following the {ey} general election" : "Election cycle not recorded")</span>
+                        @if (a.IsCurrent)
+                        {
+                            <span class="gpd-badge gpd-badge--published"><i class="bi bi-circle-fill" aria-hidden="true"></i>Current administration</span>
+                        }
+                        else
+                        {
+                            <span class="gpd-badge gpd-badge--none"><i class="bi bi-archive" aria-hidden="true"></i>Historical record</span>
+                        }
+                        <span class="gpd-link-arrow">Open record <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+                    </a>
+                </li>
+            }
+        </ol>
+    </div>
+</section>
+
+@* ---------------------------------------------------------------- Trust strip *@
+<section class="gpd-section" aria-labelledby="trust-title">
+    <div class="container">
+        <h2 id="trust-title" class="gpd-h2">How the information is checked</h2>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="gpd-card gpd-trust">
+                    <i class="bi bi-journal-check" aria-hidden="true"></i>
+                    <h3>Source first</h3>
+                    <p>Records link to the Electoral Commission, Parliament of Ghana, official announcements and ministry publications.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="gpd-card gpd-trust">
+                    <i class="bi bi-patch-check" aria-hidden="true"></i>
+                    <h3>Clear result states</h3>
+                    <p>Provisional, verified, officially declared and corrected results are labelled so you always know what a figure means.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="gpd-card gpd-trust">
+                    <i class="bi bi-flag" aria-hidden="true"></i>
+                    <h3>Corrections are recorded</h3>
+                    <p>Found a mistake? <a href="/corrections">Report it</a>. Important changes are kept in a visible history.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

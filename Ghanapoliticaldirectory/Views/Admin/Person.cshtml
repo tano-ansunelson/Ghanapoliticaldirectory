@@ -1,0 +1,172 @@
+﻿@model PersonAdminPageModel
+@using Ghanapoliticaldirectory.Business
+@using Ghanapoliticaldirectory.Domain
+@{
+    var p = Model.Person; ViewData["Title"] = p.FullName;
+}
+<div class="gpd-admin-pagehead">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb gpd-crumbs mb-1"><li class="breadcrumb-item"><a asp-controller="Admin" asp-action="People">People</a></li><li class="breadcrumb-item active" aria-current="page">@p.FullName</li></ol></nav>
+        <h1 class="gpd-h1">@p.FullName</h1>
+        <p class="gpd-muted mb-0">Status: <strong>@p.Stage</strong>@(p.IsArchived ? " · archived" : ""). Ending one position never changes the person's other records.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" asp-controller="Admin" asp-action="AddPerson" asp-route-existingPersonId="@p.Id">Add a position</a>
+        <a class="btn btn-outline-secondary" asp-action="Candidates" asp-route-personId="@p.Id">Add as candidate</a>
+        <a class="btn btn-gpd" asp-action="EditPerson" asp-route-id="@p.Id"><i class="bi bi-pencil" aria-hidden="true"></i> Edit details</a>
+        @if (p.Stage == WorkflowStage.Published && !p.IsArchived)
+        {
+            <a class="btn btn-outline-secondary" asp-controller="People" asp-action="Details" asp-route-id="@p.Id" target="_blank" rel="noopener">See public page</a>
+        }
+    </div>
+</div>
+
+<section class="gpd-panel">
+    <h2 class="gpd-h3">Appointments (ministers, president, and so on)</h2>
+    @if (p.Appointments.Count == 0)
+    {
+        <p class="gpd-muted mb-0">None recorded.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table gpd-table align-middle">
+                <caption class="visually-hidden">Appointments</caption>
+                <thead><tr><th scope="col">Position</th><th scope="col">Ministry / administration</th><th scope="col">Period</th><th scope="col">Review</th><th scope="col">End it</th></tr></thead>
+                <tbody>
+                    @foreach (var a in p.Appointments)
+                    {
+                        <tr>
+                            <th scope="row">@a.Title</th>
+                            <td>@a.Ministry@(a.Ministry is not null && a.Administration is not null ? " · " : "")@a.Administration</td>
+                            <td>@a.Start.ToString("d MMM yyyy") – @(a.End?.ToString("d MMM yyyy") ?? "present")</td>
+                            <td>@a.Stage</td>
+                            <td>
+                                @if (a.End is null)
+                                {
+                                    <form asp-action="EndAppointment" asp-route-id="@p.Id" method="post" class="d-flex flex-wrap gap-1">
+                                        <input type="hidden" name="appointmentId" value="@a.Id" />
+                                        <input class="form-control form-control-sm" style="width:9.5rem" type="date" name="endDate" aria-label="End date" required />
+                                        <input class="form-control form-control-sm" style="width:10rem" name="reason" placeholder="Reason" aria-label="Reason" required />
+                                        <button class="btn btn-sm btn-outline-danger" type="submit">End</button>
+                                    </form>
+                                }
+                                else
+                                {
+
+                                    <span class="gpd-muted">Ended</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<section class="gpd-panel">
+    <h2 class="gpd-h3">Parliamentary terms</h2>
+    @if (p.Terms.Count == 0)
+    {
+        <p class="gpd-muted mb-0">None recorded.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table gpd-table align-middle">
+                <caption class="visually-hidden">Parliamentary terms</caption>
+                <thead><tr><th scope="col">Constituency</th><th scope="col">Period</th><th scope="col">Review</th><th scope="col">End it</th></tr></thead>
+                <tbody>
+                    @foreach (var t in p.Terms)
+                    {
+                        <tr>
+                            <th scope="row">@t.Constituency <span class="gpd-muted">· @t.Region</span></th>
+                            <td>@t.Start.ToString("d MMM yyyy") – @(t.End?.ToString("d MMM yyyy") ?? "present")</td>
+                            <td>@t.Stage</td>
+                            <td>
+                                @if (t.End is null)
+                                {
+                                    <form asp-action="EndTerm" asp-route-id="@p.Id" method="post" class="d-flex flex-wrap gap-1">
+                                        <input type="hidden" name="termId" value="@t.Id" />
+                                        <input class="form-control form-control-sm" style="width:9.5rem" type="date" name="endDate" aria-label="End date" required />
+                                        <input class="form-control form-control-sm" style="width:10rem" name="reason" placeholder="Reason" aria-label="Reason" required />
+                                        <button class="btn btn-sm btn-outline-danger" type="submit">End</button>
+                                    </form>
+                                }
+                                else
+                                {
+
+                                    <span class="gpd-muted">Ended</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<section class="gpd-panel">
+    <h2 class="gpd-h3">Party history</h2>
+    @if (p.Affiliations.Count == 0)
+    {
+        <p class="gpd-muted">No party recorded. That means unknown, which is not the same as independent.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table gpd-table align-middle">
+                <caption class="visually-hidden">Party affiliations</caption>
+                <thead><tr><th scope="col">Party</th><th scope="col">Period</th><th scope="col">Review</th></tr></thead>
+                <tbody>
+                    @foreach (var a in p.Affiliations)
+                    {
+                        <tr><th scope="row">@a.Party</th><td>@a.Start.ToString("d MMM yyyy") – @(a.End?.ToString("d MMM yyyy") ?? "present")</td><td>@a.Stage</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    <h3 class="gpd-h3 mt-3">Record a party change</h3>
+    <form asp-action="ChangeParty" asp-route-id="@p.Id" method="post" class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label small" for="cp-party">New party</label>
+            <select class="form-select form-select-sm" id="cp-party" name="PartyId" required>
+                <option value="">Select</option>
+                @foreach (var o in Model.Parties)
+                {
+                    <option value="@o.Value">@o.Text</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3"><label class="form-label small" for="cp-date">Effective from</label><input class="form-control form-control-sm" id="cp-date" name="EffectiveFrom" type="date" required /></div>
+        <div class="col-md-3"><label class="form-label small" for="cp-src">Source (title or web address)</label><input class="form-control form-control-sm" id="cp-src" name="Source" /></div>
+        <div class="col-md-2"><button class="btn btn-sm btn-gpd w-100" type="submit">Save change</button></div>
+    </form>
+    <p class="form-text">The earlier party stays on record with its dates. Past years are never rewritten to the new party.</p>
+</section>
+
+<section class="gpd-panel">
+    <h2 class="gpd-h3">Candidacies</h2>
+    @if (p.Candidacies.Count == 0)
+    {
+        <p class="gpd-muted mb-0">None recorded.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table gpd-table align-middle">
+                <caption class="visually-hidden">Candidacies</caption>
+                <thead><tr><th scope="col">Contest</th><th scope="col">Party</th><th scope="col">Status</th><th scope="col">Review</th></tr></thead>
+                <tbody>
+                    @foreach (var c in p.Candidacies)
+                    {
+                        <tr><th scope="row">@c.Contest</th><td>@c.Party</td><td>@c.Status</td><td>@c.Stage</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

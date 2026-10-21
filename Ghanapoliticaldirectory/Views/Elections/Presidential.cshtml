@@ -1,0 +1,80 @@
+﻿@model PresidentialPageModel
+@{
+    var c = Model.Selected;
+    ViewData["Title"] = c.Name + " · Presidential";
+    ViewData["Nav"] = "elections";
+    var status = Model.Result?.Status ?? ResultStatus.NotPublished;
+    var vd = new ViewDataDictionary(ViewData);
+    vd["ResultStatus"] = status;
+    var states = new[]
+    {
+        ResultStatus.Provisional, ResultStatus.Verified, ResultStatus.OfficiallyDeclared, ResultStatus.Corrected, ResultStatus.Published
+    };
+}
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel("Presidential election: " + c.Year,
+    "Candidates are published before an election. Results are added only after they are released by the Electoral Commission and verified.",
+    new[] { new Link("Elections", "/elections/presidential") }))
+
+<section class="gpd-section">
+    <div class="container">
+        <div class="gpd-election-bar">
+            @await Html.PartialAsync("_CycleSwitcher", new CycleSwitcherModel(Model.Cycles, c.Year, "Presidential"))
+            <a class="gpd-link-arrow" asp-controller="Elections" asp-action="Parliamentary" asp-route-year="@c.Year">
+                Parliamentary elections for @c.Year <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            </a>
+        </div>
+
+        <dl class="gpd-meta gpd-meta--row gpd-election-meta">
+            <div><dt>Election</dt><dd>@c.Name</dd></div>
+            <div><dt>Election status</dt><dd>@(c.Phase == ElectionPhase.Completed ? "Completed" : c.Phase == ElectionPhase.CandidatesPublished ? "Candidates published" : "Upcoming")</dd></div>
+            <div><dt>Result status</dt><dd>@await Html.PartialAsync("_StatusBadge", status)</dd></div>
+        </dl>
+
+        <h2 class="gpd-h2" id="candidates">Candidates</h2>
+        @if (Model.Candidates.Count == 0)
+        {
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-person-badge", "Candidates not yet published",
+                "Candidate profiles will appear here once they are published from official sources."))
+        }
+        else
+        {
+            <p class="gpd-muted">Candidates are listed alphabetically. Party shown is the party at the time of this election.</p>
+            <div class="row g-3">
+                @foreach (var cand in Model.Candidates)
+                {
+                    <div class="col-md-6 col-xl-3">@await Html.PartialAsync("_CandidateCard", cand, vd)</div>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+<section class="gpd-section gpd-section--white" id="results">
+    <div class="container">
+        @if (Model.Result is null)
+        {
+            <h2 class="gpd-h2">Election results</h2>
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-hourglass", "Results not yet published",
+                "No results are shown for this election yet. No vote totals or winner will appear until the official results are released and verified."))
+        }
+        else
+        {
+            @await Html.PartialAsync("_ResultsTable", new ResultsTableModel("Presidential", Model.Candidates, Model.Result))
+        }
+    </div>
+</section>
+
+<section class="gpd-section">
+    <div class="container">
+        <h2 class="gpd-h2">What the result labels mean</h2>
+        <dl class="gpd-legend">
+            @foreach (var s in states)
+            {
+                <div>
+                    <dt>@await Html.PartialAsync("_StatusBadge", s)</dt>
+                    <dd>@UiHelpers.StatusHelp(s)</dd>
+                </div>
+            }
+        </dl>
+    </div>
+</section>

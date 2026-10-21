@@ -1,0 +1,91 @@
+﻿@model EditPersonPageModel
+@using Ghanapoliticaldirectory.Business
+@using Ghanapoliticaldirectory.Domain
+@{
+    var p = Model.Person; var f = Model.Form; ViewData["Title"] = "Edit " + p.FullName;
+    var reviewed = p.Stage > WorkflowStage.AwaitingVerification;
+}
+<div class="gpd-admin-pagehead">
+    <div>
+        <nav aria-label="Breadcrumb">
+            <ol class="breadcrumb gpd-crumbs mb-1">
+                <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="People">People</a></li>
+                <li class="breadcrumb-item"><a asp-action="Person" asp-route-id="@p.Id">@p.FullName</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Edit</li>
+            </ol>
+        </nav>
+        <h1 class="gpd-h1">Edit @p.FullName</h1>
+        <p class="gpd-muted mb-0">Status: <strong>@p.Stage</strong>. This changes the profile's name, biography and photo. Positions and party are changed on the person's page.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <section class="gpd-panel">
+            @if (p.IsArchived)
+            {
+                <div class="alert alert-warning" role="alert">This person is archived and cannot be edited.</div>
+            }
+            else
+            {
+                @if (reviewed)
+                {
+                    <div class="alert alert-info" role="note">
+                        This profile has already been @(p.Stage == WorkflowStage.Published ? "published" : "reviewed"). Give a reason for the change. The reason and the <strong>previous text</strong> are kept in the history@(p.Stage == WorkflowStage.Published ? "; the profile stays published." : "; it goes back to draft for review again.")
+                    </div>
+                }
+                else if (p.Stage == WorkflowStage.AwaitingVerification)
+                {
+                    <div class="alert alert-info" role="note">This profile is waiting to be verified. If you change it, it goes back to draft and must be submitted again.</div>
+                }
+                <form method="post" enctype="multipart/form-data" asp-action="EditPerson" asp-route-id="@p.Id" novalidate>
+                    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                    <div class="mb-3">
+                        <label class="form-label" for="FullName">Full name <span class="gpd-req">*</span></label>
+                        <input class="form-control" id="FullName" name="FullName" value="@f.FullName" maxlength="200" />
+                    </div>
+                    @if (Model.Form.ConfirmedNotDuplicate || ViewData.ModelState.Values.SelectMany(v => v.Errors).Any(e => e.ErrorMessage.Contains("looks like the same person")))
+                    {
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="ConfirmedNotDuplicate" name="ConfirmedNotDuplicate" value="true" @(f.ConfirmedNotDuplicate ? "checked" : null) />
+                            <label class="form-check-label" for="ConfirmedNotDuplicate">This is a different person from the one named above.</label>
+                        </div>
+                    }
+                    <div class="mb-3">
+                        <label class="form-label" for="Biography">Biography</label>
+                        <textarea class="form-control" id="Biography" name="Biography" rows="8" maxlength="8000">@f.Biography</textarea>
+                        <div class="form-text">Write only facts you can source. Leave it empty if there is no verified biography.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="AdditionalInfo">Additional information</label>
+                        <textarea class="form-control" id="AdditionalInfo" name="AdditionalInfo" rows="3" maxlength="2000">@f.AdditionalInfo</textarea>
+                    </div>
+
+                    <fieldset class="mb-3">
+                        <legend class="form-label fs-6">Photo</legend>
+                        @if (!string.IsNullOrEmpty(p.PhotoUrl))
+                        {
+                            <p class="small"><img src="@p.PhotoUrl" alt="@(p.PhotoAlt ?? "Current photo")" style="max-height:90px;border-radius:8px" /> <span class="gpd-muted">Current photo. Choose a file only to replace it.</span></p>
+                        }
+                        <input class="form-control mb-2" type="file" name="Photo" accept="image/jpeg,image/png,image/webp" aria-label="New photo" />
+                        <input class="form-control" name="PhotoAlt" value="@f.PhotoAlt" maxlength="300" placeholder="Describe the photo for people who cannot see it (required with a new photo)" aria-label="Photo description" />
+                        <div class="form-text">JPG, PNG or WebP, up to 2 MB.</div>
+                    </fieldset>
+
+                    @if (reviewed)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label" for="Reason">Reason for the change <span class="gpd-req">*</span></label>
+                            <input class="form-control" id="Reason" name="Reason" value="@f.Reason" maxlength="1000" placeholder="For example: spelling corrected against the Parliament directory" />
+                        </div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-gpd" type="submit">Save changes</button>
+                        <a class="btn btn-outline-secondary" asp-action="Person" asp-route-id="@p.Id">Cancel</a>
+                    </div>
+                </form>
+            }
+        </section>
+    </div>
+</div>

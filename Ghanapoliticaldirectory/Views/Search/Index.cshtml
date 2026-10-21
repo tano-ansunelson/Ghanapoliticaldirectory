@@ -1,0 +1,51 @@
+﻿@model SearchPageModel
+@{
+    ViewData["Title"] = string.IsNullOrEmpty(Model.Query) ? "Search" : $"Search: {Model.Query}";
+    ViewData["Nav"] = "";
+    var groups = Model.Items.GroupBy(i => i.Type).OrderBy(g => g.Key).ToList();
+}
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel("Search",
+    "Search people, parties, positions, ministries, regions, constituencies, election years and administrations."))
+
+<section class="gpd-section">
+    <div class="container">
+        <form class="gpd-hero-search gpd-hero-search--light" asp-action="Index" method="get" role="search">
+            <div class="gpd-hero-field">
+                <label for="search-q" class="visually-hidden">Search the directory</label>
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input id="search-q" name="q" type="search" autocomplete="off" value="@Model.Query" data-suggest
+                       placeholder="Search for a politician, constituency, ministry, or election..." />
+            </div>
+            <button class="btn btn-gpd" type="submit">Search</button>
+        </form>
+
+        @if (string.IsNullOrWhiteSpace(Model.Query))
+        {
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-search", "Start typing to search", "Try a name, a ministry, a region, a constituency or an election year."))
+        }
+        else if (Model.Items.Count == 0)
+        {
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-emoji-neutral", $"No results for “{Model.Query}”", "Check the spelling or try a shorter search."))
+        }
+        else
+        {
+            <p class="gpd-muted" role="status">@Model.Items.Count @(Model.Items.Count == 1 ? "result" : "results") for “@Model.Query”</p>
+            @foreach (var g in groups)
+            {
+                var gid = "grp-" + g.Key.Replace(" ", "-");
+                <section class="gpd-block" aria-labelledby="@gid">
+                    <h2 class="gpd-h3" id="@gid">@g.Key</h2>
+                    <ul class="gpd-results-list list-unstyled">
+                        @foreach (var i in g)
+                        {
+                            <li>
+                                <a href="@i.Url">@i.Label</a>
+                                @if (!string.IsNullOrEmpty(i.Subtitle)) { <span class="gpd-muted"> · @i.Subtitle</span> }
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+        }
+    </div>
+</section>

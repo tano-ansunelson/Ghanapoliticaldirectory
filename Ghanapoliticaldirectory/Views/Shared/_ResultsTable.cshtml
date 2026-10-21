@@ -1,0 +1,94 @@
+﻿@model ResultsTableModel
+@{
+    var r = Model.Result;
+    var showPct = Model.Candidates.Any(c => c.Percentage is not null);
+    var caption = "Votes received by each candidate" + (showPct ? ", and each candidate's share of valid votes" : "") + ".";
+}
+<section class="gpd-results" aria-labelledby="results-heading">
+    <div class="gpd-results-head">
+        <h2 id="results-heading" class="gpd-h2">@Model.ContestLabel results</h2>
+        @await Html.PartialAsync("_StatusBadge", r.Status)
+    </div>
+    <p class="gpd-muted">@UiHelpers.StatusHelp(r.Status)</p>
+
+    @if (!string.IsNullOrEmpty(r.CorrectionNote))
+    {
+        <div class="alert alert-warning" role="note"><i class="bi bi-pencil-square" aria-hidden="true"></i> @r.CorrectionNote</div>
+    }
+
+    <div class="table-responsive">
+        <table class="table gpd-table align-middle">
+            <caption>
+                @caption
+                <span class="gpd-sample-tag">Sample figures</span>
+            </caption>
+            <thead>
+                <tr>
+                    <th scope="col">Candidate</th>
+                    <th scope="col">Party</th>
+                    <th scope="col" class="text-end">Votes received</th>
+                    <th scope="col" class="text-end">Share of valid votes</th>
+                    <th scope="col">Outcome</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model.Candidates)
+                {
+                    <tr>
+                        <th scope="row"><a asp-controller="People" asp-action="Details" asp-route-id="@c.PersonId">@c.FullName</a></th>
+                        <td>@await Html.PartialAsync("_PartyChip", new PartyChipModel(c.Party))</td>
+                        <td class="text-end gpd-num">@(c.Votes is null ? "—" : c.Votes.Value.ToString("N0"))</td>
+                        <td class="text-end gpd-num">@(c.Percentage is null ? "—" : c.Percentage.Value.ToString("0.00") + "%")</td>
+                        <td>
+                            @if (c.IsDeclaredWinner)
+                            {
+                                <span class="gpd-badge gpd-badge--declared"><i class="bi bi-check-circle-fill" aria-hidden="true"></i>Declared winner</span>
+                            }
+                            else
+                            {
+                                <span class="gpd-muted">—</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (!showPct)
+    {
+        <p class="gpd-muted small">Percentages are shown only once a result has been verified against the official source.</p>
+    }
+    @if (!Model.Candidates.Any(c => c.IsDeclaredWinner))
+    {
+        <p class="gpd-muted small">No winner is shown until the result has been officially declared and verified.</p>
+    }
+
+    <h3 class="gpd-h3">Officially reported figures</h3>
+    <dl class="gpd-stats">
+        <div><dt>Valid votes</dt><dd class="gpd-num">@(r.Totals.ValidVotes?.ToString("N0") ?? "—")</dd></div>
+        <div><dt>Rejected ballots</dt><dd class="gpd-num">@(r.Totals.RejectedBallots?.ToString("N0") ?? "—")</dd></div>
+        <div><dt>Total votes cast</dt><dd class="gpd-num">@(r.Totals.TotalVotesCast?.ToString("N0") ?? "—")</dd></div>
+        <div><dt>Registered voters</dt><dd class="gpd-num">@(r.Totals.RegisteredVoters?.ToString("N0") ?? "—")</dd></div>
+    </dl>
+
+    <dl class="gpd-meta gpd-meta--row">
+        <div><dt>Verified on</dt><dd>@(r.VerifiedOn is null ? "Not yet verified" : UiHelpers.Date(r.VerifiedOn.Value))</dd></div>
+        <div><dt>Published on</dt><dd>@(r.PublishedOn is null ? "Not yet published" : UiHelpers.Date(r.PublishedOn.Value))</dd></div>
+    </dl>
+
+    <h3 class="gpd-h3">Sources</h3>
+    @await Html.PartialAsync("_SourceList", r.Sources)
+
+    @if (r.Changes.Count > 0)
+    {
+        <details class="gpd-details">
+            <summary>Change history</summary>
+            <ul class="list-unstyled gpd-changes">
+                @foreach (var ch in r.Changes)
+                {
+                    <li><time datetime="@ch.On.ToString("yyyy-MM-dd")">@UiHelpers.Date(ch.On)</time> · @ch.Summary</li>
+                }
+            </ul>
+        </details>
+    }
+</section>

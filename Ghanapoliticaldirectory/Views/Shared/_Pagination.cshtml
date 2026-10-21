@@ -1,0 +1,45 @@
+﻿@model PagedInfo
+@{
+    // Keeps every other query-string filter when moving between pages.
+    string Href(int p)
+    {
+        var parts = Context.Request.Query
+            .Where(k => k.Key != "page")
+            .Select(k => Uri.EscapeDataString(k.Key) + "=" + Uri.EscapeDataString(k.Value.ToString()))
+            .ToList();
+        parts.Add("page=" + p);
+        return Context.Request.PathBase.Value + Context.Request.Path.Value + "?" + string.Join("&", parts);
+    }
+
+    var first = Model.TotalItems == 0 ? 0 : (Model.Page - 1) * Model.PageSize + 1;
+    var last = Math.Min(Model.Page * Model.PageSize, Model.TotalItems);
+}
+<div class="gpd-pager">
+    <p class="gpd-pager-summary" role="status">Showing @first–@last of @Model.TotalItems</p>
+    @if (Model.TotalPages > 1)
+    {
+        <nav aria-label="Pagination">
+            <ul class="pagination mb-0">
+                <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                    <a class="page-link" href="@Href(Model.Page - 1)" aria-label="Previous page" tabindex="@(Model.Page == 1 ? "-1" : "0")">Previous</a>
+                </li>
+                @for (var p = 1; p <= Model.TotalPages; p++)
+                {
+                    if (p == 1 || p == Model.TotalPages || Math.Abs(p - Model.Page) <= 2)
+                    {
+                        <li class="page-item @(p == Model.Page ? "active" : "")">
+                            <a class="page-link" href="@Href(p)" aria-label="Page @p" aria-current="@(p == Model.Page ? "page" : null)">@p</a>
+                        </li>
+                    }
+                    else if (Math.Abs(p - Model.Page) == 3)
+                    {
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    }
+                }
+                <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                    <a class="page-link" href="@Href(Model.Page + 1)" aria-label="Next page" tabindex="@(Model.Page == Model.TotalPages ? "-1" : "0")">Next</a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>

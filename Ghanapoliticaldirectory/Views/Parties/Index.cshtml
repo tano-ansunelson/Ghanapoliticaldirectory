@@ -1,0 +1,25 @@
+﻿@model IReadOnlyList<PartyRef>
+@{
+    ViewData["Title"] = "Political Parties";
+    ViewData["Nav"] = "parties";
+}
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel("Political Parties",
+    "Parties are listed alphabetically by abbreviation, each with the same layout. Membership is recorded by date, so a person's current party is never assumed for earlier years."))
+
+<section class="gpd-section">
+    <div class="container">
+        <div class="row g-3">
+            @foreach (var p in Model)
+            {
+                <div class="col-sm-6 col-lg-4">
+                    <a class="gpd-party-card" asp-controller="Parties" asp-action="Details" asp-route-id="@p.Id">
+                        <span class="gpd-party-logo" aria-hidden="true">@p.Abbreviation</span>
+                        <span class="gpd-party-name">@p.Name</span>
+                        <span class="gpd-link-arrow">View party page <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+                    </a>
+                </div>
+            }
+        </div>
+        <p class="gpd-muted small mt-3">Independent candidates and people with no party are supported and shown with an “Independent” label.</p>
+    </div>
+</section>

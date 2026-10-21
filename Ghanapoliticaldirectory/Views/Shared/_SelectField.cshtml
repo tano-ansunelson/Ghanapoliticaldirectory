@@ -1,0 +1,25 @@
+﻿@model SelectFieldModel
+@{
+    var id = "f-" + Model.Name.Replace(".", "-").Replace("[", "-").Replace("]", "");
+}
+<div class="gpd-field">
+    <label class="form-label" for="@id">
+        @Model.Label
+        @if (Model.Required)
+        {
+            <span class="gpd-req" aria-hidden="true">*</span>
+        }
+    </label>
+    <select class="form-select" id="@id" name="@Model.Name" data-role="@Model.Role" disabled="@Model.Disabled"
+            aria-describedby="@(Model.Help is null ? null : id + "-help")" required="@Model.Required">
+        <option value="">@Model.Placeholder</option>
+        @foreach (var o in Model.Options)
+        {
+            <option value="@o.Value" selected="@(o.Value == Model.Selected)">@o.Text</option>
+        }
+    </select>
+    @if (Model.Help is not null)
+    {
+        <div class="form-text" id="@(id)-help">@Model.Help</div>
+    }
+</div>

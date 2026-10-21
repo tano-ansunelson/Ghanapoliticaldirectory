@@ -1,0 +1,49 @@
+﻿@model ResultsListModel
+@{
+    ViewData["Title"] = "Election results";
+}
+<div class="gpd-admin-pagehead">
+    <div>
+        <h1 class="gpd-h1">Election results</h1>
+        <p class="gpd-muted mb-0">Pick a contest to enter or review its figures. A contest appears here once it has candidates (<a asp-action="Candidates">add candidates</a>).</p>
+    </div>
+</div>
+<section class="gpd-panel">
+    <form method="get" class="mb-3">
+        <div class="input-group" style="max-width:28rem">
+            <select class="form-select" name="cycleId" aria-label="Election cycle">
+                <option value="">All cycles</option>
+                @foreach (var c in Model.Cycles)
+                {
+                    <option value="@c.Value" selected="@(c.Value == Model.CycleId?.ToString())">@c.Text</option>
+                }
+            </select>
+            <button class="btn btn-outline-secondary" type="submit">Filter</button>
+        </div>
+    </form>
+    @if (Model.Contests.Count == 0)
+    {
+        <p class="gpd-muted mb-0">No contests found.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table gpd-table align-middle">
+                <caption class="visually-hidden">Contests</caption>
+                <thead><tr><th scope="col">Cycle</th><th scope="col">Contest</th><th scope="col">Candidates</th><th scope="col">Result status</th><th scope="col"></th></tr></thead>
+                <tbody>
+                    @foreach (var c in Model.Contests)
+                    {
+                        <tr>
+                            <td>@c.Cycle</td>
+                            <th scope="row">@c.Label</th>
+                            <td>@c.Candidates</td>
+                            <td>@(c.ResultStage?.ToString() ?? "Not entered")</td>
+                            <td class="text-end"><a class="btn btn-sm btn-outline-secondary" asp-action="EditResult" asp-route-contestId="@c.Id">Open</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

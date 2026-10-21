@@ -1,0 +1,138 @@
+﻿@model AddPersonPageModel
+@{
+    var f = Model.Form;
+    var o = Model.Options;
+    var existing = f.ExistingPersonId is not null;
+    ViewData["Title"] = existing ? "Add a position" : "Add person";
+    var constituencyUrl = Url.Action("Constituencies", "Elections") ?? "/elections/constituencies";
+    // The form is bound at the root (no "Form." prefix), so errors are keyed "FullName", "Mp.Start", etc.
+    string? nameError = ViewContext.ModelState.TryGetValue("FullName", out var nameEntry) && nameEntry.Errors.Count > 0
+        ? nameEntry.Errors[0].ErrorMessage : null;
+}
+
+<div class="gpd-admin-pagehead">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb gpd-crumbs mb-1">
+            <li class="breadcrumb-item"><a asp-action="People">People</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@(existing ? "Add a position" : "Add person")</li>
+        </ol></nav>
+        <h1 class="gpd-h1">@(existing ? "Add a position to an existing person" : "Add person")</h1>
+        <p class="gpd-muted mb-0">One profile per person. Tick every position they hold: each one is saved as a separate record with its own dates.</p>
+    </div>
+</div>
+
+<form asp-action="AddPerson" method="post" enctype="multipart/form-data" novalidate data-person-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" name="ExistingPersonId" value="@f.ExistingPersonId" />
+
+    <div class="row g-4">
+        <div class="col-xl-8">
+
+            @if (existing)
+            {
+                <div class="gpd-callout" role="note">
+                    <i class="bi bi-person-check" aria-hidden="true"></i>
+                    <div>
+                        <strong>Adding to the existing profile of @f.FullName.</strong>
+                        No second profile will be created.
+                        <a asp-action="AddPerson">Not the same person? Start again</a>
+                    </div>
+                </div>
+                <input type="hidden" name="FullName" value="@f.FullName" />
+            }
+            else
+            {
+                <section class="gpd-panel" aria-labelledby="dup-h">
+                    <h2 id="dup-h" class="gpd-h3">1. Check whether the person already exists</h2>
+                    <label class="form-label" for="dup-q">Search the directory by name</label>
+                    <input id="dup-q" class="form-control" type="search" autocomplete="off" placeholder="Start typing a name…"
+                           data-duplicate-check data-similar-url="@Url.Action("Similar", "Admin")" aria-describedby="dup-help" />
+                    <div class="form-text" id="dup-help">If the person is listed, add a position to that profile instead of creating a duplicate.</div>
+                    <div id="dup-results" class="gpd-dup" aria-live="polite"></div>
+                </section>
+
+                <section class="gpd-panel" aria-labelledby="det-h">
+                    <h2 id="det-h" class="gpd-h3">2. Personal details</h2>
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label" for="FullName">Full name <span class="gpd-req" aria-hidden="true">*</span></label>
+                            <input id="FullName" name="FullName" value="@f.FullName" class="form-control @(nameError is null ? "" : "is-invalid")" autocomplete="off"
+                                   data-fullname aria-describedby="@(nameError is null ? null : "FullName-error")" />
+                            @if (nameError is not null)
+                            {
+                                <div class="invalid-feedback d-block" id="FullName-error">@nameError</div>
+                            }
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="photo">Photograph</label>
+                            <input id="photo" class="form-control" type="file" name="Photo" accept="image/png,image/jpeg,image/webp" aria-describedby="photo-help" />
+                            <div class="form-text" id="photo-help">JPG, PNG or WebP. Checked on the server for type and size.</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="Biography">Biography</label>
+                            <textarea id="Biography" name="Biography" class="form-control" rows="5" aria-describedby="bio-help">@f.Biography</textarea>
+                            <div class="form-text" id="bio-help">Neutral and factual. Link sources in the position records below.</div>
+                        </div>
+                        <div class="col-md-6">
+                            @await Html.PartialAsync("_SelectField", new SelectFieldModel("PartyId", "Political party affiliation", o.Parties, f.PartyId, "Independent / no party",
+                                Help: "Affiliation is recorded with dates and never assumed for earlier years."))
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="PartyStart">Affiliation start date</label>
+                            <input id="PartyStart" name="PartyStart" type="date" class="form-control" value="@(f.PartyStart is null ? "" : f.PartyStart.Value.ToString("yyyy-MM-dd"))" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="AdditionalInfo">Additional profile information</label>
+                            <textarea id="AdditionalInfo" name="AdditionalInfo" class="form-control" rows="3">@f.AdditionalInfo</textarea>
+                        </div>
+                    </div>
+                </section>
+            }
+
+            <section class="gpd-panel" aria-labelledby="pos-h">
+                <h2 id="pos-h" class="gpd-h3">@(existing ? "1" : "3"). Positions held</h2>
+                <fieldset>
+                    <legend class="form-label">Select every position this person holds or has held</legend>
+                    <div class="gpd-checkgrid">
+                        @foreach (var (key, label) in AddPersonForm.PositionKinds)
+                        {
+                            <div class="form-check gpd-check">
+                                <input class="form-check-input" type="checkbox" name="SelectedPositions" value="@key" id="pos-@key"
+                                       data-position-toggle="@key" aria-controls="panel-@key" checked="@f.SelectedPositions.Contains(key)" />
+                                <label class="form-check-label" for="pos-@key" data-label="@label">@label</label>
+                            </div>
+                        }
+                    </div>
+                </fieldset>
+
+                @foreach (var (key, label) in AddPersonForm.PositionKinds)
+                {
+                    @await Html.PartialAsync("_PositionPanel", new PositionPanelModel(key, label, f.For(key), o, f.SelectedPositions.Contains(key), constituencyUrl))
+                }
+            </section>
+
+            <div class="gpd-formbar">
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="confirmedNotDuplicate" name="confirmedNotDuplicate" value="true" />
+                    <label class="form-check-label" for="confirmedNotDuplicate">I have checked: this is a different person from any similar names listed.</label>
+                </div>
+                <button class="btn btn-gpd" type="submit"><i class="bi bi-save" aria-hidden="true"></i> Save as draft</button>
+                <a class="btn btn-outline-secondary" asp-action="People">Cancel</a>
+                <span class="gpd-muted small">Drafts are not public. They must be verified and approved first.</span>
+            </div>
+        </div>
+
+        <aside class="col-xl-4" aria-label="What will be saved">
+            <div class="gpd-panel gpd-sticky">
+                <h2 class="gpd-h3">What will be saved</h2>
+                <ul id="save-preview" class="gpd-preview list-unstyled" aria-live="polite" data-existing="@(existing ? "true" : "false")">
+                    <li>@(existing ? "Existing profile (no new person record)" : "1 new person record")</li>
+                </ul>
+                <p class="gpd-muted small mb-0">
+                    The checkboxes are a convenience. On save the server creates one separate, related record per ticked position,
+                    each linked to the same person by its PersonId. Nothing is public until verified and approved.
+                </p>
+            </div>
+        </aside>
+    </div>
+</form>

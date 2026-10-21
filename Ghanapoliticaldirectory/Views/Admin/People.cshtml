@@ -1,0 +1,120 @@
+﻿@model AdminPeopleModel
+@{
+    ViewData["Title"] = "People";
+    // ?demo=loading | error | empty lets designers review those states without a backend.
+    var demo = Context.Request.Query["demo"].ToString();
+    var statuses = new[] { "Published", "Awaiting verification", "Draft", "Archived" };
+    string StatusClass(string s) => s switch
+    {
+        "Published" => "gpd-badge--published",
+        "Awaiting verification" => "gpd-badge--provisional",
+        "Archived" => "gpd-badge--none",
+        _ => "gpd-badge--none"
+    };
+}
+
+<div class="gpd-admin-pagehead">
+    <div>
+        <h1 class="gpd-h1">People</h1>
+        <p class="gpd-muted mb-0">One profile per person. Positions are added as separate records on the same profile.</p>
+    </div>
+    <a class="btn btn-gpd" asp-action="AddPerson"><i class="bi bi-person-plus" aria-hidden="true"></i> Add person</a>
+</div>
+
+<div class="gpd-panel">
+    <form method="get" asp-action="People" class="gpd-toolbar" role="search" aria-label="Search people">
+        <div class="gpd-toolbar-search">
+            <label for="people-q" class="visually-hidden">Search people</label>
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input id="people-q" name="q" type="search" class="form-control" value="@Model.Q" placeholder="Search by name, position or party" />
+        </div>
+        <div>
+            <label for="people-status" class="visually-hidden">Status</label>
+            <select id="people-status" name="status" class="form-select">
+                <option value="">All statuses</option>
+                @foreach (var s in statuses)
+                {
+                    <option value="@s" selected="@(s == Model.Status)">@s</option>
+                }
+            </select>
+        </div>
+        <button class="btn btn-gpd" type="submit">Search</button>
+        @if (!string.IsNullOrEmpty(Model.Q) || !string.IsNullOrEmpty(Model.Status))
+        {
+            <a class="btn btn-outline-secondary" asp-action="People">Clear</a>
+        }
+    </form>
+
+    @if (demo == "error")
+    {
+        <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
+            <i class="bi bi-exclamation-octagon-fill" aria-hidden="true"></i>
+            <div>
+                <strong>The list could not be loaded.</strong> Check your connection and try again. Nothing was changed.
+                <div class="mt-2"><a class="btn btn-sm btn-outline-danger" asp-action="People">Try again</a></div>
+            </div>
+        </div>
+    }
+    else if (demo == "loading")
+    {
+        <div class="gpd-skeleton" role="status" aria-busy="true" aria-live="polite">
+            <span class="visually-hidden">Loading people…</span>
+            @for (var i = 0; i < 6; i++)
+            {
+                <div class="gpd-skeleton-row" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            }
+        </div>
+    }
+    else if (Model.Rows.Count == 0 || demo == "empty")
+    {
+        @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-people", "No people found",
+            "No profiles match your search. Clear the filters or add a new person."))
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table gpd-table align-middle">
+                <caption class="visually-hidden">People records</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Positions</th>
+                        <th scope="col">Party</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Updated</th>
+                        <th scope="col" class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Rows)
+                    {
+                        <tr>
+                            <th scope="row">@p.FullName</th>
+                            <td>@p.Positions</td>
+                            <td>@p.Party</td>
+                            <td><span class="gpd-badge @StatusClass(p.Status)">@p.Status</span></td>
+                            <td>@UiHelpers.Date(p.Updated)</td>
+                            <td class="text-end">
+                                <div class="gpd-actions">
+                                    <a class="btn btn-sm btn-outline-secondary" asp-controller="AdminData" asp-action="Person" asp-route-id="@p.Id"
+                                       title="View" aria-label="View @p.FullName"><i class="bi bi-eye" aria-hidden="true"></i></a>
+                                    <a class="btn btn-sm btn-outline-secondary" asp-controller="AdminData" asp-action="EditPerson" asp-route-id="@p.Id"
+                                       title="Edit" aria-label="Edit @p.FullName"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                                    <a class="btn btn-sm btn-outline-secondary" asp-action="AddPerson" asp-route-existingPersonId="@p.Id"
+                                       title="Add a position" aria-label="Add a position to @p.FullName"><i class="bi bi-plus-circle" aria-hidden="true"></i></a>
+                                    <form asp-action="ArchivePerson" asp-route-id="@p.Id" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" data-confirm="Archive @(p.FullName)? The profile and all historical records are kept. It is only hidden from public pages."
+                                                data-confirm-label="Archive" aria-label="Archive @p.FullName">
+                                            <i class="bi bi-archive" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @await Html.PartialAsync("_Pagination", Model.Paging)
+    }
+</div>

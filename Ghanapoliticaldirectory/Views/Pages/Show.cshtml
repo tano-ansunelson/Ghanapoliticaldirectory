@@ -1,0 +1,16 @@
+﻿@model StaticPageModel
+@{
+    ViewData["Title"] = Model.Title;
+    ViewData["Nav"] = Model.Title.StartsWith("About") ? "about" : "";
+}
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel(Model.Title, Model.Intro))
+
+<section class="gpd-section">
+    <div class="container gpd-prose">
+        @foreach (var s in Model.Sections)
+        {
+            <h2 class="gpd-h3">@s.Heading</h2>
+            <p>@s.Body</p>
+        }
+    </div>
+</section>

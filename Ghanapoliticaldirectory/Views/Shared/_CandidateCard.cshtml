@@ -1,0 +1,34 @@
+﻿@model CandidateModel
+@{
+    // Optional: the contest's result status can be passed in through ViewData["ResultStatus"].
+    var status = ViewData["ResultStatus"] is ResultStatus rs ? rs : ResultStatus.NotPublished;
+}
+<article class="gpd-candidate">
+    <div class="gpd-candidate-photo">
+        @await Html.PartialAsync("_Portrait", new PortraitModel(Model.FullName, Model.PhotoUrl, "card"))
+    </div>
+    <div class="gpd-candidate-body">
+        <h3 class="gpd-person-name">
+            <a asp-controller="People" asp-action="Details" asp-route-id="@Model.PersonId">@Model.FullName</a>
+        </h3>
+        <div class="gpd-person-party">@await Html.PartialAsync("_PartyChip", new PartyChipModel(Model.Party, true))</div>
+        <dl class="gpd-meta">
+            <div><dt>Candidate status</dt><dd>@Model.Status</dd></div>
+            @if (!string.IsNullOrEmpty(Model.RunningMate))
+            {
+                <div><dt>Running mate</dt><dd>@Model.RunningMate</dd></div>
+            }
+            @if (status != ResultStatus.NotPublished)
+            {
+                <div><dt>Result status</dt><dd>@await Html.PartialAsync("_StatusBadge", status)</dd></div>
+            }
+        </dl>
+        @if (!string.IsNullOrEmpty(Model.Biography))
+        {
+            <p class="gpd-candidate-bio">@Model.Biography</p>
+        }
+        <a class="gpd-link-arrow" asp-controller="People" asp-action="Details" asp-route-id="@Model.PersonId" aria-label="Read the biography of @Model.FullName">
+            Biography <i class="bi bi-arrow-right" aria-hidden="true"></i>
+        </a>
+    </div>
+</article>

@@ -1,0 +1,42 @@
+﻿@model OfficesPageModel
+@{
+    ViewData["Title"] = "Government & Public Offices";
+    ViewData["Nav"] = "offices";
+}
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel("Government & Public Offices",
+    "Public offices such as the Chief of Staff, Attorney-General and Speaker of Parliament. These offices are not assumed to belong to any ministry.",
+    new[] { new Link("Ministries", "/ministries") }))
+
+<section class="gpd-section">
+    <div class="container">
+        <form class="gpd-filters gpd-filters--inline" method="get" asp-action="Offices" aria-label="Choose administration">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    @await Html.PartialAsync("_SelectField", new SelectFieldModel("administrationId", "Administration or period",
+                        Model.Administrations, Model.AdministrationId.ToString(), "Select an administration", Role: "autosubmit"))
+                </div>
+                <div class="col-md-3"><button class="btn btn-gpd" type="submit">Show officeholders</button></div>
+            </div>
+        </form>
+
+        <div class="row g-3">
+            @foreach (var o in Model.Offices)
+            {
+                <div class="col-lg-6">
+                    <section class="gpd-card gpd-office" aria-labelledby="office-@o.Id">
+                        <h2 id="office-@o.Id" class="gpd-h3">@o.Title</h2>
+                        <p class="gpd-muted small">@o.Description</p>
+                        @if (o.Holder is null)
+                        {
+                            @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-person-dash", "No holder recorded", "No holder is recorded for this period."))
+                        }
+                        else
+                        {
+                            @await Html.PartialAsync("_PersonCard", o.Holder)
+                        }
+                    </section>
+                </div>
+            }
+        </div>
+    </div>
+</section>

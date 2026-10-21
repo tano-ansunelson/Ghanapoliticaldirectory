@@ -1,0 +1,40 @@
+﻿@model AppointmentsListModel
+@{
+    ViewData["Title"] = "Positions and appointments";
+}
+<div class="gpd-admin-pagehead">
+    <div>
+        <h1 class="gpd-h1">Positions and appointments</h1>
+        <p class="gpd-muted mb-0">Everyone appointed to an office. To add one, use <a asp-action="AddPerson">Add person</a>. To end one, open the person.</p>
+    </div>
+</div>
+<section class="gpd-panel">
+    <form method="get" class="mb-3"><div class="input-group" style="max-width:28rem"><input class="form-control" type="search" name="q" value="@Model.Q" placeholder="Search by name or position" aria-label="Search" /><button class="btn btn-outline-secondary" type="submit">Search</button></div></form>
+    @if (Model.Rows.Count == 0)
+    {
+           
+        <p class="gpd-muted mb-0">Nothing found.</p>
+
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table gpd-table align-middle">
+                <caption class="visually-hidden">Appointments</caption>
+                <thead><tr><th scope="col">Person</th><th scope="col">Position</th><th scope="col">Ministry / administration</th><th scope="col">Period</th><th scope="col">Review</th></tr></thead>
+                <tbody>
+                    @foreach (var a in Model.Rows)
+                    {
+                        <tr>
+                            <th scope="row"><a asp-action="Person" asp-route-id="@a.PersonId">@a.Person</a></th>
+                            <td>@a.Title</td>
+                            <td>@a.Ministry@(a.Ministry is not null && a.Administration is not null ? " · " : "")@a.Administration</td>
+                            <td>@a.Start.ToString("d MMM yyyy") – @(a.End?.ToString("d MMM yyyy") ?? "present")</td>
+                            <td>@a.Stage</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

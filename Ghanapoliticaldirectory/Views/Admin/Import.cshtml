@@ -1,0 +1,259 @@
+﻿@model ImportPageModel
+@using Ghanapoliticaldirectory.Business
+@* @using Ghanapoliticaldirectory.Business.Import *@
+@using Ghanapoliticaldirectory.Service.Business.Import
+@{
+    ViewData["Title"] = "Import from Excel"; var plan = Model.Plan; var done = Model.Outcome; var r = Model.Reference;
+}
+<div class="gpd-admin-pagehead">
+    <div>
+        <h1 class="gpd-h1">Import people and positions from Excel</h1>
+        <p class="gpd-muted mb-0">Add many people at once. Every row is one position a person held. Everything is saved as a <strong>draft</strong>: nothing is public until it has been verified, approved and published in the review queue.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+
+        <section class="gpd-panel mb-4">
+            <h2 class="gpd-h3">1. Get the template</h2>
+            <p>Download the template and fill in one row for each position a person held. A person who held three positions has three rows, with the same Full Name on each.</p>
+            <a class="btn btn-outline-secondary" href="/templates/people-import-template.xlsx" download><i class="bi bi-download" aria-hidden="true"></i> Download the Excel template</a>
+        </section>
+
+        <section class="gpd-panel mb-4">
+            <h2 class="gpd-h3">2. Check the file, then import</h2>
+            <form method="post" enctype="multipart/form-data" asp-action="Import" novalidate>
+                <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                <div class="mb-3">
+                    <label class="form-label" for="file">Excel file (.xlsx, up to 5 MB)</label>
+                    <input class="form-control" id="file" name="file" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                    <div class="form-text">The rows must be on the sheet called <strong>People</strong> (or the first sheet), with the column names in the first row.</div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-outline-secondary" type="submit" name="mode" value="check">Check the file only</button>
+                    <button class="btn btn-gpd" type="submit" name="mode" value="import">Import people with no problems</button>
+                </div>
+                <p class="gpd-muted small mt-2 mb-0">"Check" saves nothing. "Import" saves each person whose rows all pass the check and skips the others, which are listed with the row to fix.</p>
+            </form>
+        </section>
+
+        @if (done is not null)
+        {
+            <section class="gpd-panel mb-4" aria-labelledby="done-h">
+                <h2 class="gpd-h3" id="done-h">Import finished @(Model.FileName is null ? "" : "(" + Model.FileName + ")")</h2>
+                <p>
+                    <strong>@done.Imported</strong> imported as drafts@(done.Partly > 0 ? $", {done.Partly} only partly" : "")@(done.Failed > 0 ? $", {done.Failed} failed" : "")@(done.Skipped > 0 ? $", {done.Skipped} skipped (problems in the file)" : "").
+                    @if (done.Imported + done.Partly > 0)
+                    {
+                        <text>Next: open the <a asp-action="Review">review queue</a> to submit, verify, approve and publish them.</text>
+                    }
+                </p>
+                @if (done.Skipped + done.Failed + done.Partly > 0)
+                {
+                    <p class="gpd-muted small">To fix the others: correct those rows in your file, <strong>delete the rows of people who were already imported</strong>, and upload it again. A person already imported would be flagged as a duplicate.</p>
+                }
+                <div class="table-responsive">
+                    <table class="table gpd-table align-middle">
+                        <caption class="visually-hidden">Import result for each person</caption>
+                        <thead><tr><th scope="col">Person</th><th scope="col">Result</th><th scope="col">Positions saved</th><th scope="col">Details</th></tr></thead>
+                        <tbody>
+                            @foreach (var p in done.People)
+                            {
+                                <tr>
+                                    <th scope="row">@if (p.PersonId is int id) {
+                                        <a asp-action="Person" asp-route-id="@id">@p.FullName</a>
+                                    } else
+                                    {
+
+                                        @p.FullName
+                                    }
+                                </th>
+                                <td>@(p.Status switch { ImportStatus.Imported => "Imported (draft)", ImportStatus.PartlyImported => "Partly imported", ImportStatus.Failed => "Not saved", _ => "Skipped" })</td>
+                                <td>@p.PositionsSaved</td>
+                                <td>@if (p.Messages.Count == 0) {
+                                    <span class="gpd-muted">—</span>
+                                } else
+                                {
+
+                                    <ul class="mb-0 ps-3">@foreach (var m in p.Messages) {
+                                        <li>@m</li>
+                                    }
+                                </ul>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+    }
+
+    @if (plan is not null)
+{
+    <section class="gpd-panel mb-4" aria-labelledby="check-h">
+        <h2 class="gpd-h3" id="check-h">Check result @(Model.FileName is null ? "" : "(" + Model.FileName + ")")</h2>
+        @if (plan.HasFileProblem)
+        {
+            <div class="alert alert-danger" role="alert">
+                <strong>The file has problems to fix first.</strong>
+                <ul class="mb-0 mt-1">@foreach (var i in plan.FileIssues) {
+                    <li>Row @i.Row@(i.Column.Length > 0 ? ", " + i.Column : ""): @i.Message</li>
+                }
+            </ul>
+        </div>
+    }
+    @if (plan.People.Count > 0)
+    {
+        <p><strong>@plan.ReadyCount</strong> of @plan.People.Count people are ready to import@(plan.ProblemCount > 0 ? $"; {plan.ProblemCount} have problems" : ""). @plan.DataRows rows read from sheet "@plan.Sheet".</p>
+        @if (plan.ReadyCount > 0 && !plan.HasFileProblem)
+        {
+            <p class="gpd-muted small">The check matches every name against the system and applies the position rules, including clashes between rows. A few clashes with records already in the database (for example someone else already holding the office) can only appear when you import.</p>
+        }
+        <div class="table-responsive">
+            <table class="table gpd-table align-middle">
+                <caption class="visually-hidden">Check result for each person</caption>
+                <thead><tr><th scope="col">Person</th><th scope="col">Rows</th><th scope="col">Positions</th><th scope="col">Problems</th></tr></thead>
+                <tbody>
+                    @foreach (var p in plan.People)
+                    {
+                        <tr class="@(p.IsReady ? "" : "table-danger")">
+                            <th scope="row">
+                                @p.FullName
+                                @if (p.ExistingPersonId is int eid)
+                                {
+                                    <div class="small gpd-muted">Adds to existing person #@eid</div>
+                                }
+                                <div class="small @(p.IsReady ? "text-success" : "text-danger")">@(p.IsReady ? "Ready" : "Will be skipped")</div>
+                            </th>
+                            <td>@string.Join(", ", p.Rows)</td>
+                            <td>@if (p.Positions.Count == 0) {
+                                <span class="gpd-muted">—</span>
+                            } else
+                            {
+
+                                <ul class="mb-0 ps-3">@foreach (var pos in p.Positions) {
+                                    <li>@pos.Description</li>
+                                }
+                            </ul>
+                        }
+                    </td>
+                    <td>@if (p.Issues.Count == 0) {
+                        <span class="gpd-muted">—</span>
+                    } else
+                    {
+
+                        <ul class="mb-0 ps-3">@foreach (var i in p.Issues) {
+                            <li><strong>Row @i.Row, @i.Column:</strong> @i.Message</li>
+                        }
+                    </ul>
+                }
+            </td>
+        </tr>
+    }
+</tbody>
+</table>
+</div>
+            }
+</section>
+    }
+</div>
+
+<div class="col-lg-5">
+    <section class="gpd-panel mb-4">
+        <h2 class="gpd-h3">Columns</h2>
+        <p class="gpd-muted small">Text must match what is already in the system (capital letters do not matter). If a name is not found the row is reported, never guessed.</p>
+        <dl class="small mb-0">
+            <dt>Full Name *</dt>
+            <dd>Repeat it exactly on every row of the same person.</dd>
+            <dt>Position *</dt>
+            <dd>President, Vice President, Member of Parliament, Minister, Deputy Minister, Chief of Staff, Speaker, or Other (give a Title).</dd>
+            <dt>Start Date *, End Date</dt>
+            <dd>A real Excel date, or text like 2025-01-07 or 07/01/2025 (day first). Leave End Date empty if the position is still held.</dd>
+            <dt>Administration</dt>
+            <dd>Required for President, Vice President, Minister, Deputy Minister and Chief of Staff.</dd>
+            <dt>Ministry</dt>
+            <dd>Required for Minister and Deputy Minister. Earlier names of a ministry are also accepted.</dd>
+            <dt>Election Year, Constituency, Region</dt>
+            <dd>For Members of Parliament. Region is needed only when a constituency name appears in more than one region.</dd>
+            <dt>Party At Election</dt>
+            <dd>For Members of Parliament: the party they stood for (abbreviation) or Independent. Leave empty only if "Party" and "Party Since" cover the start date.</dd>
+            <dt>Party, Party Since</dt>
+            <dd>The person's party and the date they joined. Leave both empty if unknown: unknown is not the same as independent.</dd>
+            <dt>Source</dt>
+            <dd>A web address, or a document title. Every fact needs a source.</dd>
+            <dt>Existing Person Id</dt>
+            <dd>Add the position to a person already in the system (the Id is in the People list). The name must match.</dd>
+            <dt>Different Person</dt>
+            <dd>Write Yes only when the name looks like an existing person but really is someone else.</dd>
+            <dt>Person Ref</dt>
+            <dd>Optional. Use it to keep two people with the same name apart.</dd>
+        </dl>
+    </section>
+
+    <section class="gpd-panel">
+        <h2 class="gpd-h3">Names the sheet must use</h2>
+        <p class="gpd-muted small">These are the administrations, ministries, election years and parties that exist now. Add anything missing on its own screen before importing.</p>
+        <details class="mb-2">
+            <summary><strong>Administrations</strong> (@r.Administrations.Count)</summary>
+            @if (r.Administrations.Count == 0)
+            {
+                <p class="gpd-muted small mb-0">None yet. Add them under Administrations.</p>
+            }
+            else
+            {
+
+                <ul class="small mb-0">@foreach (var a in r.Administrations) {
+                    <li>@a.Name <span class="gpd-muted">(@a.Start.ToString("yyyy")–@(a.End?.ToString("yyyy") ?? "present"))</span></li>
+                }
+            </ul>
+        }
+    </details>
+    <details class="mb-2">
+        <summary><strong>Ministries</strong> (@r.Ministries.Count)</summary>
+        @if (r.Ministries.Count == 0)
+        {
+            <p class="gpd-muted small mb-0">None yet. Add them under Ministries.</p>
+        }
+        else
+        {
+
+            <ul class="small mb-0">@foreach (var m in r.Ministries) {
+                <li>@m.Name</li>
+            }
+        </ul>
+    }
+</details>
+<details class="mb-2">
+    <summary><strong>Election years</strong> (@r.Cycles.Count)</summary>
+    @if (r.Cycles.Count == 0)
+    {
+        <p class="gpd-muted small mb-0">None yet. Add them under Elections.</p>
+    }
+    else
+    {
+
+        <ul class="small mb-0">@foreach (var c in r.Cycles) {
+            <li>@c.Year <span class="gpd-muted">@c.Name</span></li>
+        }
+    </ul>
+}
+</details>
+<details class="mb-2">
+    <summary><strong>Parties</strong> (@r.Parties.Count)</summary>
+    <ul class="small mb-0">@foreach (var p in r.Parties) {
+        <li>@p.Abbreviation <span class="gpd-muted">@p.Name</span></li>
+    }
+</ul>
+</details>
+<details>
+    <summary><strong>Regions</strong> (@r.Regions.Count)</summary>
+    <ul class="small mb-0">@foreach (var x in r.Regions) {
+        <li>@x</li>
+    }
+</ul>
+</details>
+</section>
+</div>
+</div>

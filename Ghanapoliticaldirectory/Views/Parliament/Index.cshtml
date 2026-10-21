@@ -1,0 +1,87 @@
+﻿@model ParliamentPageModel
+@{
+    ViewData["Title"] = "Parliament";
+    ViewData["Nav"] = "parliament";
+    var f = Model.Filter;
+    var hasFilters = !string.IsNullOrEmpty(f.Term) || f.RegionId is not null || f.ConstituencyId is not null || f.PartyId is not null || !string.IsNullOrEmpty(f.Name);
+}
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel("Parliament",
+    "Members of Parliament by term, region, constituency and party. Party is the party during that term. Ministerial roles held at the same time are shown on the same profile."))
+
+<section class="gpd-section">
+    <div class="container">
+        <form class="gpd-filters" method="get" asp-action="Index" aria-label="Filter members of Parliament"
+              data-dependent-form data-constituency-url="@Url.Action("Constituencies", "Elections")">
+            <div class="row g-3 align-items-end">
+                <div class="col-sm-6 col-lg-3">
+                    <div class="gpd-field">
+                        <label class="form-label" for="f-name">Name</label>
+                        <input class="form-control" id="f-name" name="name" type="search" value="@f.Name" placeholder="Search by name" />
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    @await Html.PartialAsync("_SelectField", new SelectFieldModel("term", "Parliamentary term", Model.Terms, f.Term, "All terms"))
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    @await Html.PartialAsync("_SelectField", new SelectFieldModel("regionId", "Region", Model.Regions, f.RegionId?.ToString(), "All regions", Role: "region"))
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    @await Html.PartialAsync("_SelectField", new SelectFieldModel("constituencyId", "Constituency", Model.Constituencies, f.ConstituencyId?.ToString(),
+                        f.RegionId is null ? "Choose a region first" : "All constituencies in region", Disabled: f.RegionId is null, Role: "constituency"))
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    @await Html.PartialAsync("_SelectField", new SelectFieldModel("partyId", "Party during the term", Model.Parties, f.PartyId?.ToString(), "All parties"))
+                </div>
+                <div class="col-lg-3 d-flex gap-2">
+                    <button class="btn btn-gpd" type="submit">Apply filters</button>
+                    @if (hasFilters)
+                    {
+                        <a class="btn btn-outline-secondary" asp-action="Index">Reset</a>
+                    }
+                </div>
+            </div>
+        </form>
+
+        @if (Model.Rows.Count == 0)
+        {
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-funnel", "No members match these filters", "Try a different term, region or name."))
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table gpd-table align-middle">
+                    <caption class="visually-hidden">Members of Parliament</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Member</th>
+                            <th scope="col">Term</th>
+                            <th scope="col">Constituency</th>
+                            <th scope="col">Region</th>
+                            <th scope="col">Party during the term</th>
+                            <th scope="col">Other positions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.Rows)
+                        {
+                            <tr>
+                                <th scope="row">
+                                    <span class="gpd-rowperson">
+                                        @await Html.PartialAsync("_Portrait", new PortraitModel(r.Person.FullName, r.Person.PhotoUrl, "sm"))
+                                        <a asp-controller="People" asp-action="Details" asp-route-id="@r.Person.Id">@r.Person.FullName</a>
+                                    </span>
+                                </th>
+                                <td>@r.Term</td>
+                                <td>@r.Constituency</td>
+                                <td>@r.Region</td>
+                                <td>@await Html.PartialAsync("_PartyChip", new PartyChipModel(r.PartyDuringTerm))</td>
+                                <td>@(r.OtherPositions ?? "—")</td>
+                            </tr>
+                        }
+                     </tbody>
+                </table>
+            </div>
+            @await Html.PartialAsync("_Pagination", Model.Paging)
+        }
+    </div>
+</section>

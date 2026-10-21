@@ -1,0 +1,17 @@
+﻿@model SeatsModel
+@* One neutral bar colour and one shared scale: no party is visually emphasised. The numbers carry the meaning. *@
+<table class="table gpd-table gpd-seats align-middle">
+    <caption class="visually-hidden">Seats by party, alphabetical</caption>
+    <thead><tr><th scope="col">Party</th><th scope="col" class="text-end">Seats</th><th scope="col"><span class="visually-hidden">Share of the largest group</span></th></tr></thead>
+    <tbody>
+        @foreach (var s in Model.Rows)
+        {
+            var width = (Model.Max <= 0 ? 0 : (double)s.Seats / Model.Max * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+            <tr>
+                <th scope="row">@s.PartyAbbreviation</th>
+                <td class="text-end gpd-num">@s.Seats</td>
+                <td class="gpd-seat-cell" aria-hidden="true"><span class="gpd-seat-bar" style="width:@(width)%"></span></td>
+            </tr>
+        }
+    </tbody>
+</table>

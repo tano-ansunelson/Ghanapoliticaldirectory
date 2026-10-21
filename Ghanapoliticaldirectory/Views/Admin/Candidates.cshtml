@@ -1,0 +1,250 @@
+﻿@model CandidatesPageModel
+@using Ghanapoliticaldirectory.Business
+@using Ghanapoliticaldirectory.Domain
+@{
+    ViewData["Title"] = "Candidates";
+    var f = Model.Form; var parl = f.ContestType != "Presidential"; var cur = Model.Current;
+}
+<div class="gpd-admin-pagehead">
+    <div>
+        <h1 class="gpd-h1">Candidates</h1>
+        <p class="gpd-muted mb-0">Choose a contest, then add everyone who stood in it: the winner and all the opponents. Standing does not mean winning. Who won is decided from the figures in <a asp-action="Results">Election results</a>.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+
+        <section class="gpd-panel mb-4">
+            <h2 class="gpd-h3">1. Choose the contest</h2>
+            <form method="get" asp-action="Candidates" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label" for="electionCycleId">Election cycle <span class="gpd-req">*</span></label>
+                    <select class="form-select" id="electionCycleId" name="electionCycleId">
+                        <option value="">Select</option>
+                        @foreach (var c in Model.Cycles)
+                        {
+                            <option value="@c.Value" selected="@(c.Value == f.ElectionCycleId)">@c.Text</option>
+                        }
+                    </select>
+                    @if (Model.Cycles.Count == 0)
+                    {
+                        <div class="form-text">No election cycles yet. <a asp-controller="Admin" asp-action="Elections">Add one first</a>.</div>
+                    }
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="contestType">Contest</label>
+                    <select class="form-select" id="contestType" name="contestType">
+                        <option value="Parliamentary" selected="@parl">Parliamentary (one constituency)</option>
+                        <option value="Presidential" selected="@(!parl)">Presidential</option>
+                    </select>
+                </div>
+                <div class="col-md-4" id="seat-wrap" hidden="@(!parl)">
+                    <label class="form-label" for="constituencyId">Constituency</label>
+                    <select class="form-select" id="constituencyId" name="constituencyId">
+                        <option value="">Select</option>
+                        @foreach (var g in Model.Constituencies.GroupBy(c => c.Region))
+                        {
+                            <optgroup label="@g.Key">
+                                @foreach (var c in g)
+                                {
+                                  <option value="@c.Id" selected="@(c.Id.ToString() == f.ConstituencyId)">@c.Name</option>
+                                }
+                            </optgroup>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4" id="round-wrap" hidden="@parl">
+                    <label class="form-label" for="round">Round</label>
+                    <input class="form-control" id="round" name="round" type="number" min="1" value="@f.Round" />
+                </div>
+                <div class="col-12"><button class="btn btn-gpd" type="submit">Show this contest</button></div>
+            </form>
+        </section>
+
+        @if (cur is null)
+        {
+            <section class="gpd-panel"><p class="gpd-muted mb-0">Choose the election cycle@(parl ? " and constituency" : "") above to add its candidates.</p></section>
+        }
+        else
+        {
+            <section class="gpd-panel mb-4">
+
+                <h2 class="gpd-h3">@cur.Label</h2>
+
+                @if (cur.Candidates.Count == 0)
+
+                {
+
+                    <p class="gpd-muted mb-0">No candidates recorded yet for this contest.</p>
+
+                }
+
+                else
+
+                {
+                    <p class="gpd-muted small">Already recorded (for example an MP added through Add person is a candidate here). Do not add them again.</p>
+                    <div class="table-responsive">
+                        <table class="table gpd-table align-middle">
+                            <caption class="visually-hidden">Candidates already in this contest</caption>
+                            <thead><tr><th scope="col">Candidate</th><th scope="col">Party</th>@if (!parl) {
+                                <th scope="col">Running mate</th>
+                            }
+                            <th scope="col">Review</th></tr></thead>
+                            <tbody>
+                                @foreach (var c in cur.Candidates)
+                                {
+                                    <tr><th scope="row"><a asp-action="Person" asp-route-id="@c.PersonId">@c.Name</a></th><td>@c.Party</td>@if (!parl) {
+                                        <td>@(c.RunningMate ?? "—")</td>
+                                    }
+                                    <td>@c.Stage</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                @if (cur.ContestId is int cid)
+                {
+                    <a class="btn btn-outline-secondary btn-sm" asp-action="EditResult" asp-route-contestId="@cid"><i class="bi bi-bar-chart-line" aria-hidden="true"></i> Enter the votes for this contest</a>
+                }
+            </section>
+
+            <section class="gpd-panel">
+                <h2 class="gpd-h3">2. Add candidates</h2>
+                <p class="gpd-muted small">Start with the winner if you like, then every opponent. For each one, choose an <strong>existing person</strong> or type the <strong>name of a new person</strong> (a draft profile with just the name is created, and you can add details later), then the party they stood for. Empty rows are ignored; use "Add another" for more.</p>
+                <form method="post" asp-action="Candidates" novalidate id="cand-form">
+                    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                    <input type="hidden" name="ElectionCycleId" value="@f.ElectionCycleId" />
+                    <input type="hidden" name="ContestType" value="@f.ContestType" />
+                    <input type="hidden" name="ConstituencyId" value="@f.ConstituencyId" />
+                    <input type="hidden" name="Round" value="@f.Round" />
+
+                    <div id="rows">
+                        @for (var i = 0; i < f.Rows.Count; i++)
+                        {
+                            var r = f.Rows[i];
+                            <fieldset class="gpd-cand-row border rounded p-3 mb-3">
+                                <legend class="fs-6 mb-2 w-auto px-1 cand-legend">Candidate @(i + 1)@(i == 0 ? " (for example the winner)" : "")</legend>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Existing person</label>
+                                        <select class="form-select" name="Rows[@i].PersonId">
+                                            <option value="">Choose, or type a new name</option>
+                                            @foreach (var p in Model.People)
+                                            {
+                                                <option value="@p.Id" selected="@(p.Id.ToString() == r.PersonId)">@p.Name</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">or new person's name</label>
+                                        <input class="form-control" name="Rows[@i].NewName" value="@r.NewName" maxlength="200" placeholder="Full name" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Party they stood for <span class="gpd-req">*</span></label>
+                                        <select class="form-select" name="Rows[@i].PartyId">
+                                            <option value="">Select</option>
+                                            @foreach (var p in Model.Parties)
+                                            {
+                                                <option value="@p.Value" selected="@(p.Value == r.PartyId)">@p.Text</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Ballot number</label>
+                                        <input class="form-control" type="number" min="1" name="Rows[@i].BallotNumber" value="@r.BallotNumber" />
+                                    </div>
+                                    <div class="col-md-3 d-flex align-items-end">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="dup@(i)" name="Rows[@i].ConfirmedNotDuplicate" value="true" @(r.ConfirmedNotDuplicate ? "checked" : null) />
+                                            <label class="form-check-label small" for="dup@(i)">Different person from any similar name already listed</label>
+                                        </div>
+                                    </div>
+                                    @if (!parl)
+                                    {
+                                        <div class="col-md-6">
+                                            <label class="form-label">Running mate (existing)</label>
+                                            <select class="form-select" name="Rows[@i].RunningMatePersonId">
+                                                <option value="">None / not recorded</option>
+                                                @foreach (var p in Model.People)
+                                                {
+                                                    <option value="@p.Id" selected="@(p.Id.ToString() == r.RunningMatePersonId)">@p.Name</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">or running mate's new name</label>
+                                            <input class="form-control" name="Rows[@i].RunningMateNewName" value="@r.RunningMateNewName" maxlength="200" />
+                                        </div>
+                                    }
+                                </div>
+                            </fieldset>
+                        }
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-outline-secondary" type="button" id="add-row"><i class="bi bi-plus-lg" aria-hidden="true"></i> Add another candidate</button>
+                        <button class="btn btn-gpd" type="submit">Save candidates as drafts</button>
+                    </div>
+                    <p class="gpd-muted small mt-2 mb-0">Either all the candidates on this form are saved or none is, so a mistake never leaves half a contest behind.</p>
+                </form>
+            </section>
+        }
+    </div>
+
+    <div class="col-lg-4">
+        <section class="gpd-panel">
+            <h2 class="gpd-h3">Contests</h2>
+            @if (Model.Contests.Count == 0)
+            {
+                <p class="gpd-muted mb-0">No contests yet. Saving the first candidates creates one.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table gpd-table align-middle">
+                        <caption class="visually-hidden">Contests</caption>
+                        <thead><tr><th scope="col">Contest</th><th scope="col">Candidates</th><th scope="col">Result</th></tr></thead>
+                        <tbody>
+                            @foreach (var c in Model.Contests)
+                            {
+                                <tr>
+                                    <th scope="row"><span class="gpd-muted small d-block">@c.Cycle</span>@c.Label</th>
+                                    <td>@c.Candidates</td>
+                                    <td>@(c.ResultStage?.ToString() ?? "Not entered")<br /><a asp-action="EditResult" asp-route-contestId="@c.Id">Votes</a></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+          var t = document.getElementById('contestType'), seat = document.getElementById('seat-wrap'), round = document.getElementById('round-wrap');
+          function sync() { if (!t) return; var p = t.value !== 'Presidential'; seat.hidden = !p; round.hidden = p; }
+          if (t) { t.addEventListener('change', sync); sync(); }
+
+          var add = document.getElementById('add-row'), rows = document.getElementById('rows');
+          if (!add || !rows) return;
+          add.addEventListener('click', function () {
+            var all = rows.querySelectorAll('.gpd-cand-row');
+            var i = all.length, src = all[all.length - 1];
+            var copy = src.cloneNode(true);
+            copy.querySelectorAll('[name]').forEach(function (el) {
+              el.name = el.name.replace(/Rows\[\d+\]/, 'Rows[' + i + ']');
+              if (el.type === 'checkbox') { el.checked = false; el.id = 'dup' + i; }
+              else if (el.tagName === 'SELECT') el.selectedIndex = 0;
+              else el.value = '';
+            });
+            var lab = copy.querySelector('label.form-check-label'); if (lab) lab.setAttribute('for', 'dup' + i);
+            var leg = copy.querySelector('.cand-legend'); if (leg) leg.textContent = 'Candidate ' + (i + 1);
+            rows.appendChild(copy);
+            var first = copy.querySelector('select'); if (first) first.focus();
+          });
+        })();
+    </script>
+}

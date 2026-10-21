@@ -1,0 +1,96 @@
+﻿@model AdminDashboardModel
+@{
+    ViewData["Title"] = "Dashboard";
+    string StageClass(string s) => s switch
+    {
+        "Draft" => "gpd-badge--none",
+        "Needs review" => "gpd-badge--corrected",
+        _ => "gpd-badge--provisional"
+    };
+}
+
+<div class="gpd-admin-pagehead">
+    <div>
+        <h1 class="gpd-h1">Dashboard</h1>
+        <p class="gpd-muted mb-0">Overview of records and work waiting for review.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-gpd" asp-action="AddPerson"><i class="bi bi-person-plus" aria-hidden="true"></i> Add person</a>
+        <a class="btn btn-outline-gpd" asp-action="Results"><i class="bi bi-clipboard-data" aria-hidden="true"></i> Enter results</a>
+        <a class="btn btn-outline-gpd" asp-action="Import"><i class="bi bi-upload" aria-hidden="true"></i> Import data</a>
+    </div>
+</div>
+
+<section aria-label="Summary">
+    <div class="row g-3 gpd-summary">
+        @foreach (var c in Model.Cards)
+        {
+            <div class="col-sm-6 col-xl-3">
+                @if (c.Url is not null)
+                {
+                    <a class="gpd-summary-card" href="@c.Url">
+                        <i class="bi @c.IconClass" aria-hidden="true"></i>
+                        <span class="gpd-summary-value">@c.Value.ToString("N0")</span>
+                        <span class="gpd-summary-label">@c.Label</span>
+                        @if (c.Hint is not null) { <span class="gpd-summary-hint">@c.Hint</span> }
+                    </a>
+                }
+                else
+                {
+                    <div class="gpd-summary-card">
+                        <i class="bi @c.IconClass" aria-hidden="true"></i>
+                        <span class="gpd-summary-value">@c.Value.ToString("N0")</span>
+                        <span class="gpd-summary-label">@c.Label</span>
+                        @if (c.Hint is not null) { <span class="gpd-summary-hint">@c.Hint</span> }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+<div class="row g-4 mt-1">
+    <section class="col-xl-7" aria-labelledby="await-h">
+        <div class="gpd-panel">
+            <h2 id="await-h" class="gpd-h3">Records awaiting verification</h2>
+            <div class="table-responsive">
+                <table class="table gpd-table align-middle">
+                    <caption class="visually-hidden">Records waiting for verification or review</caption>
+                    <thead><tr><th scope="col">Record</th><th scope="col">Type</th><th scope="col">Entered by</th><th scope="col">Date</th><th scope="col">Stage</th></tr></thead>
+                    <tbody>
+                        @foreach (var a in Model.Awaiting)
+                        {
+                            <tr>
+                                <th scope="row">@a.Record</th>
+                                <td>@a.Type</td>
+                                <td>@a.EnteredBy</td>
+                                <td>@UiHelpers.Date(a.Date)</td>
+                                <td><span class="gpd-badge @StageClass(a.Stage)">@a.Stage</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="gpd-muted small mb-0">Entry, verification, approval and publication are separate steps and can be done by different people.</p>
+        </div>
+    </section>
+
+    <section class="col-xl-5" aria-labelledby="audit-h">
+        <div class="gpd-panel">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 id="audit-h" class="gpd-h3 mb-0">Recent activity</h2>
+                <a class="gpd-link-arrow" href="/admin/audit">Audit log <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+            </div>
+            <ol class="gpd-audit list-unstyled">
+                @foreach (var e in Model.Audit)
+                {
+                    <li>
+                        <time datetime="@e.At.ToString("s")">@e.At.ToString("d MMM yyyy, HH:mm")</time>
+                        <span><strong>@e.Action</strong> · @e.Entity</span>
+                        <span class="gpd-muted small">by @e.User</span>
+                    </li>
+                }
+            </ol>
+        </div>
+    </section>
+</div>

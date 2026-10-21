@@ -1,0 +1,128 @@
+﻿@{
+    ViewData["Title"] = "Style guide";
+    var tokens = new (string Name, string Hex, string Use)[]
+    {
+        ("Ink", "#14201a", "Body text"),
+        ("Muted", "#55615a", "Secondary text (4.5:1 on white)"),
+        ("Line", "#dfe3dc", "Borders and dividers"),
+        ("Page", "#f6f5f0", "Page background"),
+        ("Green", "#0b5d3b", "Primary actions, links"),
+        ("Deep green", "#0d3d2b", "Hero and footer"),
+        ("Gold", "#f2c230", "Accent only (stripe, highlights)"),
+        ("Red", "#b3202f", "Errors and destructive actions")
+    };
+    var states = new[]
+    {
+        ResultStatus.NotPublished, ResultStatus.Provisional, ResultStatus.Verified,
+        ResultStatus.OfficiallyDeclared, ResultStatus.Corrected, ResultStatus.Published
+    };
+}
+<div class="gpd-admin-pagehead">
+    <div>
+        <h1 class="gpd-h1">Style guide</h1>
+        <p class="gpd-muted mb-0">The shared design system for the public site and this dashboard. Government-portal neutral: no party colours, accents used sparingly.</p>
+    </div>
+</div>
+
+<section class="gpd-panel" aria-labelledby="sg-colour">
+    <h2 id="sg-colour" class="gpd-h3">Colour tokens</h2>
+    <p class="gpd-muted small">Ghana's national colours appear only as a thin stripe and small accents. Parties never get colours.</p>
+    <ul class="gpd-swatches list-unstyled">
+        @foreach (var t in tokens)
+        {
+            <li>
+                <span class="gpd-swatch" style="background:@t.Hex" aria-hidden="true"></span>
+                <strong>@t.Name</strong> <code>@t.Hex</code>
+                <span class="gpd-muted small">@t.Use</span>
+            </li>
+        }
+    </ul>
+</section>
+
+<section class="gpd-panel" aria-labelledby="sg-type">
+    <h2 id="sg-type" class="gpd-h3">Typography</h2>
+    <p class="gpd-sg-display">Source Serif 4: page titles</p>
+    <p class="gpd-lead mb-2">Public Sans: body, forms and tables. Generous spacing and readable line length.</p>
+    <p class="gpd-muted small mb-0">Headings use one scale: H1 → H2 → H3. Never skip levels.</p>
+</section>
+
+<section class="gpd-panel" aria-labelledby="sg-status">
+    <h2 id="sg-status" class="gpd-h3">Result and record status labels</h2>
+    <p class="gpd-muted small">Every status has an icon and a text label, so colour is never the only signal.</p>
+    <div class="d-flex flex-wrap gap-2 mb-2">
+        @foreach (var s in states)
+        {
+            @await Html.PartialAsync("_StatusBadge", s)
+        }
+        <span class="gpd-badge gpd-badge--error"><i class="bi bi-x-octagon" aria-hidden="true"></i>Error</span>
+    </div>
+    <p class="gpd-muted small mb-1">Party chips, identical for every party:</p>
+    <div class="d-flex flex-wrap gap-2">
+        <span class="gpd-chip">CPP</span><span class="gpd-chip">NDC</span><span class="gpd-chip">NPP</span><span class="gpd-chip">PNC</span><span class="gpd-chip gpd-chip--none">Independent</span>
+    </div>
+</section>
+
+<section class="gpd-panel" aria-labelledby="sg-btn">
+    <h2 id="sg-btn" class="gpd-h3">Buttons and links</h2>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <button class="btn btn-gpd" type="button">Primary</button>
+        <button class="btn btn-outline-gpd" type="button">Secondary</button>
+        <button class="btn btn-outline-secondary" type="button">Neutral</button>
+        <button class="btn btn-danger" type="button">Destructive</button>
+        <button class="btn btn-gpd" type="button" disabled>Disabled</button>
+        <a class="gpd-link-arrow" href="#sg-btn">Text link <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+    </div>
+</section>
+
+<section class="gpd-panel" aria-labelledby="sg-forms">
+    <h2 id="sg-forms" class="gpd-h3">Form fields</h2>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label" for="sg-a">Default</label>
+            <input id="sg-a" class="form-control" value="Full name" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" for="sg-b">Validation error</label>
+            <input id="sg-b" class="form-control is-invalid" value="" aria-describedby="sg-b-err" />
+            <div class="invalid-feedback d-block" id="sg-b-err">Enter the person's full name.</div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" for="sg-c">Date</label>
+            <input id="sg-c" class="form-control" type="date" />
+            <div class="form-text">Leave the end date empty while the position continues.</div>
+        </div>
+    </div>
+</section>
+
+<section class="gpd-panel" aria-labelledby="sg-msg">
+    <h2 id="sg-msg" class="gpd-h3">Messages</h2>
+    <div class="alert alert-success d-flex gap-2" role="status"><i class="bi bi-check-circle-fill" aria-hidden="true"></i><div>Success: draft saved. Nothing is public yet.</div></div>
+    <div class="alert alert-danger d-flex gap-2" role="alert"><i class="bi bi-exclamation-octagon-fill" aria-hidden="true"></i><div>Error: the list could not be loaded. Nothing was changed.</div></div>
+    <div class="alert alert-warning d-flex gap-2" role="note"><i class="bi bi-pencil-square" aria-hidden="true"></i><div>Corrected: a published figure was amended. History is kept.</div></div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-inbox", "Empty state", "Says what is missing and what to do next."))
+        </div>
+        <div class="col-md-6">
+            <div class="gpd-skeleton" role="status" aria-busy="true"><span class="visually-hidden">Loading</span>
+                <div class="gpd-skeleton-row" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+                <div class="gpd-skeleton-row" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+                <div class="gpd-skeleton-row" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            </div>
+            <p class="gpd-muted small">Loading state (skeleton rows).</p>
+        </div>
+    </div>
+</section>
+
+<section class="gpd-panel" aria-labelledby="sg-cards">
+    <h2 id="sg-cards" class="gpd-h3">Profile card and portrait</h2>
+    <div class="row g-3">
+        <div class="col-md-6">
+            @await Html.PartialAsync("_PersonCard", new PersonCardModel(1, "Kofi Adjei Darko", null, "Minister of Finance (sample)", new PartyRef(2, "NDC", "National Democratic Congress")))
+        </div>
+        <div class="col-md-6">
+            @await Html.PartialAsync("_PersonCard", new PersonCardModel(7, "Nana Kwesi Ofori", null, "Attorney-General (sample)", null))
+        </div>
+    </div>
+    <p class="gpd-muted small mt-2 mb-0">Photographs need descriptive alternative text. Placeholders are announced as placeholders.</p>
+</section>

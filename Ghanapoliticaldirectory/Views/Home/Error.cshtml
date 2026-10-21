@@ -1,0 +1,11 @@
+﻿@{
+    ViewData["Title"] = "Something went wrong";
+}
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel("Something went wrong", "The page could not be shown. Please try again."))
+<section class="gpd-section">
+    <div class="container">
+        @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-exclamation-triangle", "Unexpected error",
+            "If this keeps happening, use the Corrections page to tell us what you were trying to open."))
+        <p class="text-center"><a class="btn btn-gpd" asp-controller="Home" asp-action="Index">Back to the homepage</a></p>
+    </div>
+</section>

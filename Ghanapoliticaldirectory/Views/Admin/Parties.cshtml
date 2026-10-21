@@ -1,0 +1,49 @@
+﻿@model PartiesPageModel
+@{
+    ViewData["Title"] = "Political parties"; var f = Model.Form;
+}
+<div class="gpd-admin-pagehead">
+    <div>
+        <h1 class="gpd-h1">Political parties</h1>
+        <p class="gpd-muted mb-0">Parties are listed here and can then be chosen when adding people, candidates and party changes.</p>
+    </div>
+</div>
+<div class="row g-4">
+    <div class="col-lg-4">
+        <section class="gpd-panel">
+            <h2 class="gpd-h3">Add a party</h2>
+            <form method="post" asp-action="Parties" novalidate>
+                <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                <div class="mb-3"><label class="form-label" for="Name">Name <span class="gpd-req">*</span></label><input class="form-control" id="Name" name="Name" value="@f.Name" /></div>
+                <div class="mb-3"><label class="form-label" for="Abbreviation">Abbreviation <span class="gpd-req">*</span></label><input class="form-control" id="Abbreviation" name="Abbreviation" value="@f.Abbreviation" /></div>
+                <div class="mb-3"><label class="form-label" for="FoundedOn">Founded on</label><input class="form-control" id="FoundedOn" name="FoundedOn" type="date" value="@f.FoundedOn?.ToString("yyyy-MM-dd")" /></div>
+                <div class="mb-3"><label class="form-label" for="WebsiteUrl">Website</label><input class="form-control" id="WebsiteUrl" name="WebsiteUrl" value="@f.WebsiteUrl" placeholder="https://" /></div>
+                <div class="mb-3"><label class="form-label" for="Description">Description</label><textarea class="form-control" id="Description" name="Description" rows="2">@f.Description</textarea></div>
+                <button class="btn btn-gpd" type="submit">Add party</button>
+            </form>
+        </section>
+    </div>
+    <div class="col-lg-8">
+        <section class="gpd-panel">
+            @if (Model.Rows.Count == 0)
+            {
+                <p class="gpd-muted mb-0">None yet.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table gpd-table align-middle">
+                        <caption class="visually-hidden">Parties</caption>
+                        <thead><tr><th scope="col">Abbreviation</th><th scope="col">Name</th><th scope="col">Founded</th></tr></thead>
+                        <tbody>
+                            @foreach (var p in Model.Rows)
+                            {
+                                <tr><th scope="row">@p.Abbreviation</th><td>@p.Name</td><td>@(p.FoundedOn?.ToString("d MMM yyyy") ?? "—")</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
+</div>

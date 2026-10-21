@@ -1,0 +1,128 @@
+﻿@model MinistryPageModel
+@{
+    var adminName = Model.Administrations.FirstOrDefault(a => a.Value == Model.AdministrationId.ToString())?.Text ?? "";
+    string AdminOf(string role) => role.Replace("Minister (", "").TrimEnd(')');
+}
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel("Ministries",
+    "Choose a ministry and an administration to see who led it at that time. Renamed or reorganised ministries keep their earlier names and records."))
+
+<section class="gpd-section">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-3">
+                <nav aria-label="Ministries" class="gpd-ministry-nav">
+                    <h2 class="gpd-h3">All ministries</h2>
+                    <ul class="list-unstyled">
+                        @foreach (var m in Model.Ministries)
+                        {
+                            var active = m.Value == Model.MinistryId.ToString();
+                            <li>
+                                <a class="@(active ? "active" : "")" asp-action="Index" asp-route-ministryId="@m.Value"
+                                   asp-route-administrationId="@Model.AdministrationId" aria-current="@(active ? "page" : null)">@m.Text</a>
+                            </li>
+                        }
+                    </ul>
+                    <a class="gpd-link-arrow" asp-action="Offices" asp-route-administrationId="@Model.AdministrationId">
+                        Public offices outside ministries <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="col-lg-9">
+                <form class="gpd-filters gpd-filters--inline" method="get" asp-action="Index" aria-label="Choose administration">
+                    <input type="hidden" name="ministryId" value="@Model.MinistryId" />
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-8">
+                            @await Html.PartialAsync("_SelectField", new SelectFieldModel("administrationId", "Administration or period",
+                                Model.Administrations, Model.AdministrationId.ToString(), "Select an administration", Role: "autosubmit"))
+                        </div>
+                        <div class="col-md-4"><button class="btn btn-gpd" type="submit">Show officeholders</button></div>
+                    </div>
+                </form>
+
+                <div class="gpd-ministry-head">
+                    <h2 class="gpd-h2 mb-1">@Model.MinistryName</h2>
+                    <p class="gpd-muted">Name used during @adminName</p>
+                    <p>@Model.Description</p>
+                    @if (Model.Website is not null)
+                    {
+                        <a class="gpd-link-ext" href="@Model.Website" target="_blank" rel="noopener noreferrer">
+                            <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Official website <span class="visually-hidden">(opens in a new tab)</span>
+                        </a>
+                    }
+                </div>
+
+                <h3 class="gpd-h3">Minister</h3>
+                @if (Model.Minister is null)
+                {
+                    @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-person-dash", "No minister recorded", "No minister is recorded for this ministry in this period."))
+                }
+                else
+                {
+                    <div class="row g-3">
+                        <div class="col-xl-8">@await Html.PartialAsync("_PersonCard", Model.Minister.Person)</div>
+                    </div>
+                    <p class="gpd-muted small mt-2">Appointed @UiHelpers.Date(Model.Minister.Start) · @(Model.Minister.End is null ? "serving" : "until " + UiHelpers.Date(Model.Minister.End.Value))</p>
+                }
+
+                <h3 class="gpd-h3">Deputy ministers</h3>
+                <div class="row g-3">
+                    @foreach (var d in Model.Deputies)
+                    {
+                        <div class="col-xl-6">
+                            @await Html.PartialAsync("_PersonCard", d.Person)
+                            <p class="gpd-muted small mt-1">@UiHelpers.Range(d.Start, d.End)</p>
+                        </div>
+                    }
+                </div>
+
+                @if (Model.Others.Count > 0)
+                {
+                    <h3 class="gpd-h3">Other associated officeholders</h3>
+                    <div class="row g-3">
+                        @foreach (var o in Model.Others)
+                        {
+                            <div class="col-xl-6">
+                                @await Html.PartialAsync("_PersonCard", o.Person)
+                                <p class="gpd-muted small mt-1">@UiHelpers.Range(o.Start, o.End)</p>
+                            </div>
+                        }
+                    </div>
+                }
+
+                <h3 class="gpd-h3">Names and structure over time</h3>
+                <ol class="gpd-history list-unstyled">
+                    @foreach (var e in Model.NameHistory)
+                    {
+                        <li>
+                            <span class="gpd-history-dates">@UiHelpers.Range(e.Start, e.End)</span>
+                            <strong>@e.Name</strong>
+                            @if (!string.IsNullOrEmpty(e.Note))
+                            {
+                                <span class="gpd-muted"> · @e.Note</span>
+                            }
+                        </li>
+                    }
+                </ol>
+
+                <h3 class="gpd-h3">Ministers in other administrations</h3>
+                <div class="table-responsive">
+                    <table class="table gpd-table align-middle">
+                        <caption class="visually-hidden">Previous and other ministers of this ministry</caption>
+                        <thead><tr><th scope="col">Minister</th><th scope="col">Administration</th><th scope="col">Period</th></tr></thead>
+                        <tbody>
+                            @foreach (var p in Model.PreviousLeaders)
+                            {
+                                <tr>
+                                    <th scope="row"><a asp-controller="People" asp-action="Details" asp-route-id="@p.Person.Id">@p.Person.FullName</a></th>
+                                    <td>@AdminOf(p.Role)</td>
+                                    <td>@UiHelpers.Range(p.Start, p.End)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

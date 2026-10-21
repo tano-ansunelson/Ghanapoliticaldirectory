@@ -1,0 +1,79 @@
+﻿@model ResultForm
+@{
+    ViewData["Title"] = "Enter results";
+    var f = Model;
+    var stage = f.StageName ?? "None";
+    bool open = stage is "None" or "Draft" or "AwaitingVerification";
+}
+<div class="gpd-admin-pagehead"><div>
+    <nav aria-label="Breadcrumb"><ol class="breadcrumb gpd-crumbs mb-1"><li class="breadcrumb-item"><a asp-action="Results">Election results</a></li><li class="breadcrumb-item active" aria-current="page">@f.ContestLabel</li></ol></nav>
+    <h1 class="gpd-h1">@f.ContestLabel</h1>
+    <p class="gpd-muted mb-0">Status: <strong>@(stage == "None" ? "Not entered yet" : stage)</strong>@(f.HasBeenCorrected ? " · corrected after publication" : ""). The system never works out a winner or a percentage: tick the winner only when the Electoral Commission has declared one.</p>
+</div></div>
+@if (!open && f.Lines.Count > 0)
+{
+    <div class="alert alert-info" role="note">These figures are locked while the result is under review or published. Changes you type here are ignored by the step buttons; to change figures use <strong>Correct</strong> at the bottom.</div>
+}
+@if (f.Lines.Count == 0)
+{
+    <div class="gpd-panel"><p class="mb-0">This contest has no candidates yet. <a asp-action="Candidates">Add candidates</a> first.</p></div>
+}
+else
+{
+<form method="post" novalidate>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <section class="gpd-panel">
+        <h2 class="gpd-h3">Candidates and votes</h2>
+        <div class="table-responsive"><table class="table gpd-table align-middle"><caption class="visually-hidden">Votes per candidate</caption>
+        <thead><tr><th scope="col">Candidate</th><th scope="col">Party</th><th scope="col">Votes</th><th scope="col">Declared winner</th></tr></thead><tbody>
+        @for (var i = 0; i < f.Lines.Count; i++) {
+            var l = f.Lines[i];
+            <tr><th scope="row">@l.Name<input type="hidden" name="Lines[@i].CandidateId" value="@l.CandidateId" /></th><td>@l.Party</td>
+            <td><input class="form-control form-control-sm" type="number" min="0" name="Lines[@i].Votes" value="@l.Votes" aria-label="Votes for @l.Name" /></td>
+            <td><input class="form-check-input" type="radio" name="WinnerCandidateId" value="@l.CandidateId" checked="@(f.WinnerCandidateId == l.CandidateId)" aria-label="@l.Name is the declared winner" /></td></tr> }
+        </tbody></table></div>
+        <div class="form-check"><input class="form-check-input" type="radio" name="WinnerCandidateId" id="nowinner" value="" checked="@(f.WinnerCandidateId is null)" /><label class="form-check-label" for="nowinner">No winner declared yet</label></div>
+    </section>
+    <section class="gpd-panel">
+        <h2 class="gpd-h3">Totals and source</h2>
+        <div class="row g-3">
+            <div class="col-md-3"><label class="form-label" for="ValidVotes">Valid votes</label><input class="form-control" id="ValidVotes" name="ValidVotes" type="number" min="0" value="@f.ValidVotes" /></div>
+            <div class="col-md-3"><label class="form-label" for="RejectedBallots">Rejected ballots</label><input class="form-control" id="RejectedBallots" name="RejectedBallots" type="number" min="0" value="@f.RejectedBallots" /></div>
+            <div class="col-md-3"><label class="form-label" for="TotalVotesCast">Total votes cast</label><input class="form-control" id="TotalVotesCast" name="TotalVotesCast" type="number" min="0" value="@f.TotalVotesCast" /></div>
+            <div class="col-md-3"><label class="form-label" for="RegisteredVoters">Registered voters</label><input class="form-control" id="RegisteredVoters" name="RegisteredVoters" type="number" min="0" value="@f.RegisteredVoters" /></div>
+            <div class="col-md-4"><label class="form-label" for="Basis">Standing of these figures</label>
+                <select class="form-select" id="Basis" name="Basis">
+                    <option value="Provisional" selected="@(f.Basis == "Provisional")">Provisional</option>
+                    <option value="Verified" selected="@(f.Basis == "Verified")">Verified against the official publication</option>
+                    <option value="OfficiallyDeclared" selected="@(f.Basis == "OfficiallyDeclared")">Officially declared</option></select></div>
+            <div class="col-md-4"><label class="form-label" for="DeclaredOn">Declared on</label><input class="form-control" id="DeclaredOn" name="DeclaredOn" type="date" value="@f.DeclaredOn?.ToString("yyyy-MM-dd")" /></div>
+            <div class="col-md-6"><label class="form-label" for="SourceTitle">Source document</label><input class="form-control" id="SourceTitle" name="SourceTitle" value="@f.SourceTitle" /></div>
+            <div class="col-md-6"><label class="form-label" for="SourceUrl">Source web address</label><input class="form-control" id="SourceUrl" name="SourceUrl" value="@f.SourceUrl" placeholder="https://" /></div>
+            <div class="col-12"><label class="form-label" for="VerificationNotes">Verification notes</label><textarea class="form-control" id="VerificationNotes" name="VerificationNotes" rows="2">@f.VerificationNotes</textarea></div>
+        </div>
+    </section>
+    <section class="gpd-panel">
+        <h2 class="gpd-h3">Steps</h2>
+        <p class="gpd-muted">Each step is a separate permission, and normally a different person from the one who entered the figures.</p>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            @if (open) { <button class="btn btn-gpd" type="submit" name="Command" value="save">Save draft</button> }
+            @if (stage is "None" or "Draft") { <button class="btn btn-outline-secondary" type="submit" name="Command" value="submit">Save and submit for verification</button> }
+            @if (stage is "Draft" or "AwaitingVerification") { <button class="btn btn-outline-secondary" type="submit" name="Command" value="verify">Mark verified</button> }
+            @if (stage == "Verified") { <button class="btn btn-outline-secondary" type="submit" name="Command" value="approve">Approve</button> }
+            @if (stage == "Approved") { <button class="btn btn-gpd" type="submit" name="Command" value="publish">Publish</button> }
+            @if (stage is "AwaitingVerification" or "Verified" or "Approved") { <button class="btn btn-outline-danger" type="submit" name="Command" value="return">Return to draft</button> }
+            @if (stage == "Published") { <button class="btn btn-outline-danger" type="submit" name="Command" value="unpublish">Unpublish</button> }
+        </div>
+        <div class="mb-3"><label class="form-label" for="Notes">Note for this step (optional)</label><input class="form-control" id="Notes" name="Notes" /></div>
+    </section>
+    @if (stage != "None")
+    {
+    <section class="gpd-panel">
+        <h2 class="gpd-h3">Correct a published or reviewed result</h2>
+        <p class="gpd-muted">Use this when figures were wrong. The old figures are kept in the history and the public label becomes "Corrected". Edit the figures above (unlock by choosing Correct), then give the reason.</p>
+        <div class="mb-3"><label class="form-label" for="CorrectionReason">Reason (at least 10 characters)</label><input class="form-control" id="CorrectionReason" name="CorrectionReason" /></div>
+        <button class="btn btn-outline-danger" type="submit" name="Command" value="correct">Save correction</button>
+    </section>
+    }
+</form>
+}

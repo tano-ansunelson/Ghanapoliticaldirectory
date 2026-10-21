@@ -1,0 +1,59 @@
+﻿@model UsersPageModel
+@{
+    ViewData["Title"] = "User management"; var f = Model.Form;
+}
+<div class="gpd-admin-pagehead">
+    <div>
+        <h1 class="gpd-h1">User management</h1>
+        <p class="gpd-muted mb-0">People who can sign in to this admin area. Roles decide what they may do: data entry, verifying, approving, publishing, or everything.</p>
+    </div>
+</div>
+<div class="row g-4">
+    <div class="col-lg-4">
+        <section class="gpd-panel">
+            <h2 class="gpd-h3">Add a user</h2>
+            <form method="post" asp-action="Users" novalidate>
+                <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                <div class="mb-3"><label class="form-label" for="Email">Email <span class="gpd-req">*</span></label><input class="form-control" id="Email" name="Email" type="email" value="@f.Email" autocomplete="off" /></div>
+                <div class="mb-3"><label class="form-label" for="DisplayName">Name</label><input class="form-control" id="DisplayName" name="DisplayName" value="@f.DisplayName" /></div>
+                <div class="mb-3">
+                    <label class="form-label" for="Password">Password <span class="gpd-req">*</span></label><input class="form-control" id="Password" name="Password" type="password" autocomplete="new-password" />
+                    <div class="form-text">At least 12 characters, with upper and lower case, a digit and a symbol.</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="Role">Role <span class="gpd-req">*</span></label>
+                    <select class="form-select" id="Role" name="Role">
+                        <option value="">Select</option>
+                        @foreach (var r in Model.Roles)
+                        {
+                            <option value="@r" selected="@(r == f.Role)">@r</option>
+                        }
+                    </select>
+                </div>
+                <button class="btn btn-gpd" type="submit">Create user</button>
+            </form>
+        </section>
+    </div>
+    <div class="col-lg-8">
+        <section class="gpd-panel">
+            <div class="table-responsive">
+                <table class="table gpd-table align-middle">
+                    <caption class="visually-hidden">Users</caption>
+                    <thead><tr><th scope="col">Email</th><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col"></th></tr></thead>
+                    <tbody>
+                        @foreach (var u in Model.Rows)
+                        {
+                            <tr>
+                                <th scope="row">@u.Email</th>
+                                <td>@u.DisplayName</td>
+                                <td>@u.Roles</td>
+                                <td>@(u.IsActive ? "Active" : "Deactivated")</td>
+                                <td class="text-end"><form asp-action="ToggleUser" asp-route-id="@u.Id" method="post" class="d-inline"><button class="btn btn-sm btn-outline-secondary" type="submit">@(u.IsActive ? "Deactivate" : "Reactivate")</button></form></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>

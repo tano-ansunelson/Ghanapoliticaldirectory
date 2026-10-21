@@ -1,0 +1,68 @@
+﻿@model RegionsPageModel
+@{
+    ViewData["Title"] = "Regions and constituencies"; var f = Model.Form;
+}
+<div class="gpd-admin-pagehead">
+    <div>
+        <h1 class="gpd-h1">Regions and constituencies</h1>
+        <p class="gpd-muted mb-0">The 16 regions are built in. Add each constituency under its region so it can be chosen when adding a Member of Parliament.</p>
+    </div>
+</div>
+<div class="row g-4">
+    <div class="col-lg-5">
+        <section class="gpd-panel">
+            <h2 class="gpd-h3">Add a constituency</h2>
+            <form method="post" asp-action="Regions" novalidate>
+                <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                <div class="mb-3">
+                    <label class="form-label" for="RegionId">Region <span class="gpd-req">*</span></label>
+                    <select class="form-select" id="RegionId" name="RegionId">
+                        <option value="">Select a region</option>
+                        @foreach (var r in Model.Regions)
+                        {
+                            <option value="@r.Value" selected="@(r.Value == f.RegionId?.ToString())">@r.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="Name">Constituency name <span class="gpd-req">*</span></label>
+                    <input class="form-control" id="Name" name="Name" value="@f.Name" />
+                </div>
+                <button class="btn btn-gpd" type="submit">Add constituency</button>
+            </form>
+        </section>
+    </div>
+    <div class="col-lg-7">
+        <section class="gpd-panel">
+            <h2 class="gpd-h3">Constituencies in this region</h2>
+            <form method="get" asp-action="Regions" class="mb-3">
+                <div class="input-group">
+                    <select class="form-select" name="regionId" aria-label="Region">
+                        <option value="">Select a region</option>
+                        @foreach (var r in Model.Regions)
+                        {
+                            <option value="@r.Value" selected="@(r.Value == Model.SelectedRegionId?.ToString())">@r.Text</option>
+                        }
+                    </select><button class="btn btn-outline-secondary" type="submit">Show</button>
+                </div>
+            </form>
+            @if (Model.SelectedRegionId is null)
+            {
+                <p class="gpd-muted mb-0">Choose a region to see its constituencies.</p>
+            }
+            else if (Model.Constituencies.Count == 0)
+            {
+
+                <p class="gpd-muted mb-0">None recorded for this region yet.</p>
+            }
+            else
+            {
+
+                <ul class="mb-0">@foreach (var c in Model.Constituencies) {
+                    <li>@c.Text</li>
+                }
+            </ul>
+        }
+    </section>
+</div>
+</div>

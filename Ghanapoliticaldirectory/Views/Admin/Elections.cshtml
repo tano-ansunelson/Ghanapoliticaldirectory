@@ -1,0 +1,58 @@
+﻿@model ElectionsPageModel
+@{
+    ViewData["Title"] = "Elections"; var f = Model.Form;
+}
+<div class="gpd-admin-pagehead">
+    <div>
+        <h1 class="gpd-h1">Elections</h1>
+        <p class="gpd-muted mb-0">Add each election cycle here first. Members of Parliament and candidates are attached to a cycle.</p>
+    </div>
+</div>
+<div class="row g-4">
+    <div class="col-lg-5">
+        <section class="gpd-panel">
+            <h2 class="gpd-h3">Add an election cycle</h2>
+            <form method="post" asp-action="Elections" novalidate>
+                <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                <div class="mb-3">
+                    <label class="form-label" for="Year">Year <span class="gpd-req">*</span></label>
+                    <input class="form-control" id="Year" name="Year" type="number" value="@f.Year" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="Name">Name (optional)</label>
+                    <input class="form-control" id="Name" name="Name" value="@f.Name" placeholder="e.g. 2024 General Election" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="ElectionDate">Election date</label>
+                    <input class="form-control" id="ElectionDate" name="ElectionDate" type="date" value="@f.ElectionDate?.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="IsDateConfirmed" name="IsDateConfirmed" value="true" checked="@f.IsDateConfirmed" />
+                    <label class="form-check-label" for="IsDateConfirmed">The date is confirmed (leave unticked if only planned)</label>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="Notes">Notes</label>
+                    <textarea class="form-control" id="Notes" name="Notes" rows="2">@f.Notes</textarea>
+                </div>
+                <button class="btn btn-gpd" type="submit">Save as draft</button>
+            </form>
+        </section>
+    </div>
+    <div class="col-lg-7">
+        <section class="gpd-panel">
+            <h2 class="gpd-h3">Existing cycles</h2>
+            @if (Model.Cycles.Count == 0)
+            {
+                <p class="gpd-muted mb-0">None yet.</p>
+            }
+            else
+            {
+
+                <ul class="mb-0">@foreach (var c in Model.Cycles) {
+                    <li>@c.Text</li>
+                }
+            </ul>
+        }
+    </section>
+</div>
+</div>

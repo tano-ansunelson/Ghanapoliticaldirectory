@@ -1,0 +1,23 @@
+﻿@model PageHeaderModel
+<section class="gpd-pagehead">
+    <div class="container">
+        <nav aria-label="Breadcrumb">
+            <ol class="breadcrumb gpd-crumbs">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                @if (Model.Crumbs is { Count: > 0 })
+                {
+                    foreach (var c in Model.Crumbs)
+                    {
+                        <li class="breadcrumb-item"><a href="@c.Url">@c.Text</a></li>
+                    }
+                }
+                <li class="breadcrumb-item active" aria-current="page">@Model.Title</li>
+            </ol>
+        </nav>
+        <h1 class="gpd-h1">@Model.Title</h1>
+        @if (!string.IsNullOrEmpty(Model.Subtitle))
+        {
+            <p class="gpd-lead">@Model.Subtitle</p>
+        }
+    </div>
+</section>

@@ -1,0 +1,18 @@
+﻿@model CycleSwitcherModel
+<nav class="gpd-cycles" aria-label="Election year">
+    <ul class="list-unstyled">
+        @foreach (var c in Model.Cycles)
+        {
+            var current = c.Year == Model.SelectedYear;
+            <li>
+                <a class="gpd-cycle @(current ? "active" : "")"
+                   asp-controller="Elections" asp-action="@Model.Action"
+                   asp-route-year="@c.Year" asp-route-regionId="@Model.RegionId" asp-route-constituencyId="@Model.ConstituencyId"
+                   aria-current="@(current ? "page" : null)">
+                    <span class="gpd-cycle-year">@c.Year</span>
+                    <span class="gpd-cycle-sub">@(c.Phase == ElectionPhase.Completed ? "Completed" : c.Phase == ElectionPhase.CandidatesPublished ? "Candidates published" : "Upcoming")</span>
+                </a>
+            </li>
+        }
+    </ul>
+</nav>

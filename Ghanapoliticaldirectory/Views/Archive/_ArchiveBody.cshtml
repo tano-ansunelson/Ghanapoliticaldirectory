@@ -1,0 +1,156 @@
+﻿@model ArchivePageModel
+@{
+    ViewData["Title"] = "History & Archives";
+    ViewData["Nav"] = "archive";
+    var a = Model.Selected;
+    var b = Model.Compare;
+    var maxSeats = Math.Max(1, Model.SeatsSelected
+        .Select(s => s.Seats)
+        .DefaultIfEmpty(0)
+        .Max()
+    // Max(s => s.Seats)
+    );
+    var options = Model.Administrations.Select(x => new Option(x.Id.ToString(), x.Name + (x.IsCurrent ? " (current)" : ""))).ToList();
+}
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel("History & Archives",
+    "Browse any recorded administration and compare factual information side by side. Historical records are clearly separated from the current government."))
+
+<section class="gpd-section">
+    <div class="container">
+
+        <h2 class="gpd-h2">Administration timeline</h2>
+        <ol class="gpd-eras list-unstyled">
+            @foreach (var x in Model.Administrations.OrderBy(y => y.Start))
+            {
+                var sel = x.Id == a.Id;
+                <li>
+                    <a class="gpd-era @(sel ? "active" : "")" asp-action="Index" asp-route-administrationId="@x.Id" asp-route-compareWith="@b?.Id"
+                       aria-current="@(sel ? "page" : null)">
+                        <span class="gpd-era-years">@x.Start.Year – @(x.End is null ? "present" : x.End.Value.Year.ToString())</span>
+                        <span class="gpd-era-name">@x.President</span>
+                        @if (x.IsCurrent)
+                        {
+                            <span class="gpd-badge gpd-badge--published">Current</span>
+                        }
+                        else
+                        {
+
+                            <span class="gpd-badge gpd-badge--none">Historical</span>
+                        }
+                    </a>
+                </li>
+            }
+        </ol>
+
+        <div class="gpd-block">
+            <div class="gpd-section-head">
+                <div>
+                    <h2 class="gpd-h2 mb-1">@a.Name</h2>
+                    <p class="gpd-muted mb-0">@UiHelpers.Range(a.Start, a.End) · following the @a.ElectionYear general election</p>
+                </div>
+                @if (a.IsCurrent)
+                {
+                    <span class="gpd-badge gpd-badge--published"><i class="bi bi-circle-fill" aria-hidden="true"></i>Current administration</span>
+                }
+                else
+                {
+                    <span class="gpd-badge gpd-badge--none"><i class="bi bi-archive" aria-hidden="true"></i>Historical record</span>
+                }
+            </div>
+            <div class="row g-3">
+                @* <div class="col-md-6">@await Html.PartialAsync("_PersonCard", a.President)</div>
+                <div class="col-md-6">@await Html.PartialAsync("_PersonCard", a.VicePresident)</div> *@
+                <div class="col-md-6">
+                    <div class="gpd-card">
+                       @*  <img src="@a.imag" *@
+                        <p class="gpd-eyebrow-dark">President</p>
+                        <p class="gpd-big mb-0">@a.President</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="gpd-card">
+                        <p class="gpd-eyebrow-dark">Vice President</p>
+                        <p class="gpd-big mb-0">@a.VicePresident</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <h2 class="gpd-h2">Changes in office</h2>
+                <ol class="gpd-events list-unstyled">
+                    @foreach (var e in Model.Timeline)
+                    {
+                        <li>
+                            <time datetime="@e.On.ToString("yyyy-MM-dd")">@UiHelpers.Date(e.On)</time>
+                            <span class="gpd-kind">@e.Kind</span>
+                            <span>@e.Text</span>
+                        </li>
+                    }
+                </ol>
+            </div>
+            <div class="col-lg-6">
+                <h2 class="gpd-h2">Parliamentary composition <span class="gpd-sample-tag">Sample figures</span></h2>
+                <p class="gpd-muted small">Seats at the start of the term, listed alphabetically. Bars use one neutral colour and the same scale.</p>
+                @await Html.PartialAsync("_SeatsTable", new SeatsModel(Model.SeatsSelected, maxSeats))
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="gpd-section gpd-section--white" id="compare">
+    <div class="container">
+        <h2 class="gpd-h2">Compare administrations</h2>
+        <form class="gpd-filters gpd-filters--inline" method="get" asp-action="Index" aria-label="Compare administrations">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    @await Html.PartialAsync("_SelectField", new SelectFieldModel("administrationId", "First administration", options, a.Id.ToString(), "Select"))
+                </div>
+                <div class="col-md-4">
+                    @await Html.PartialAsync("_SelectField", new SelectFieldModel("compareWith", "Compare with", options, b?.Id.ToString(), "Select an administration"))
+                </div>
+                <div class="col-md-4"><button class="btn btn-gpd" type="submit">Compare</button></div>
+            </div>
+        </form>
+
+        @if (b is null)
+        {
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-columns-gap", "Choose a second administration", "Pick another period to see the two side by side."))
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table gpd-table align-middle">
+                    <caption>Factual comparison. No party or candidate is endorsed or ranked.</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col"><span class="visually-hidden">Item</span></th>
+                            <th scope="col">@a.Name</th>
+                            <th scope="col">@b.Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.CompareRows)
+                        {
+                            <tr><th scope="row">@r.Label</th><td>@r.A</td><td>@r.B</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (Model.SeatsCompare is not null)
+            {
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <h3 class="gpd-h3">@a.Name</h3>
+                        @await Html.PartialAsync("_SeatsTable", new SeatsModel(Model.SeatsSelected, Math.Max(maxSeats, Model.SeatsCompare.Max(s => s.Seats))))
+                    </div>
+                    <div class="col-lg-6">
+                        <h3 class="gpd-h3">@b.Name</h3>
+                        @await Html.PartialAsync("_SeatsTable", new SeatsModel(Model.SeatsCompare, Math.Max(maxSeats, Model.SeatsCompare.Max(s => s.Seats))))
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</section>

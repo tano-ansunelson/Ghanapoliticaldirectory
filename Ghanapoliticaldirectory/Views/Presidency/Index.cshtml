@@ -1,0 +1,42 @@
+﻿@model IReadOnlyList<PresidencyRow>
+@{
+    ViewData["Title"] = "Presidency";
+    ViewData["Nav"] = "presidency";
+}
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel("Presidency",
+    "Presidents and vice presidents by administration. Each period is kept as its own record; earlier governments are never replaced by the latest one."))
+
+<section class="gpd-section">
+    <div class="container">
+        @foreach (var row in Model)
+        {
+            <section class="gpd-admin-block" aria-labelledby="adm-@row.Administration.Id">
+                <div class="gpd-section-head">
+                    <div>
+                        <h2 id="adm-@row.Administration.Id" class="gpd-h2">@row.Administration.Name</h2>
+                        <p class="gpd-muted mb-0">
+                            @UiHelpers.Range(row.Administration.Start, row.Administration.End) · following the @row.Administration.ElectionYear general election
+                        </p>
+                    </div>
+                    @if (row.Administration.IsCurrent)
+                    {
+                        <span class="gpd-badge gpd-badge--published"><i class="bi bi-circle-fill" aria-hidden="true"></i>Current administration</span>
+                    }
+                    else
+                    {
+                        <span class="gpd-badge gpd-badge--none"><i class="bi bi-archive" aria-hidden="true"></i>Historical record</span>
+                    }
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">@await Html.PartialAsync("_PersonCard", row.President)</div>
+                    <div class="col-md-6">@await Html.PartialAsync("_PersonCard", row.VicePresident)</div>
+                </div>
+                <p class="mt-3 mb-0">
+                    <a class="gpd-link-arrow" asp-controller="Archive" asp-action="Index" asp-route-administrationId="@row.Administration.Id">
+                        Full record of this administration <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </p>
+            </section>
+        }
+    </div>
+</section>

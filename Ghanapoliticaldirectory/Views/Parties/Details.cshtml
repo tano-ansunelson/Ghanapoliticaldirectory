@@ -1,0 +1,141 @@
+﻿@model PartyPageModel
+@{
+    ViewData["Title"] = Model.Party.Name;
+    ViewData["Nav"] = "parties";
+    var f = Model.Filter;
+    var hasFilters = f.Year is not null || f.AdministrationId is not null || !string.IsNullOrEmpty(f.Position) || f.RegionId is not null;
+}
+
+<section class="gpd-pagehead">
+    <div class="container">
+        <nav aria-label="Breadcrumb">
+            <ol class="breadcrumb gpd-crumbs">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Parties" asp-action="Index">Political Parties</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.Party.Abbreviation</li>
+            </ol>
+        </nav>
+        <div class="gpd-party-head">
+            <span class="gpd-party-logo gpd-party-logo--lg" role="img" aria-label="Logo placeholder for @Model.Party.Name">@Model.Party.Abbreviation</span>
+            <div>
+                <h1 class="gpd-h1">@Model.Party.Name <span class="gpd-muted">(@Model.Party.Abbreviation)</span></h1>
+                <p class="gpd-lead mb-2">@Model.Description</p>
+                @if (Model.Website is not null)
+                {
+                    <a class="gpd-link-ext" href="@Model.Website" target="_blank" rel="noopener noreferrer">
+                        <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Official website <span class="visually-hidden">(opens in a new tab)</span>
+                    </a>
+                }
+            </div>
+        </div>
+
+        @* Every party has the same position and weight in this switcher. *@
+        <nav class="gpd-party-switch" aria-label="Other parties">
+            <span class="gpd-muted small">Other parties:</span>
+            @foreach (var p in Model.AllParties)
+            {
+                <a class="gpd-chip @(p.Id == Model.Party.Id ? "is-active" : "")" asp-action="Details" asp-route-id="@p.Id"
+                   aria-current="@(p.Id == Model.Party.Id ? "page" : null)">@p.Abbreviation</a>
+            }
+        </nav>
+    </div>
+</section>
+
+<section class="gpd-section">
+    <div class="container">
+        <h2 class="gpd-h2">Associated people</h2>
+        <p class="gpd-muted">Each row is one dated record. The party shown is the party at that time, not necessarily the person's party today.</p>
+
+        <form class="gpd-filters" method="get" asp-action="Details" asp-route-id="@Model.Party.Id" aria-label="Filter people">
+            <div class="row g-3 align-items-end">
+                <div class="col-sm-6 col-lg-3">
+                    @await Html.PartialAsync("_SelectField", new SelectFieldModel("year", "Election year", Model.Years, f.Year?.ToString(), "All years"))
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    @await Html.PartialAsync("_SelectField", new SelectFieldModel("administrationId", "Administration", Model.Administrations, f.AdministrationId?.ToString(), "All administrations"))
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    @await Html.PartialAsync("_SelectField", new SelectFieldModel("position", "Position", Model.Positions, f.Position, "All positions"))
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    @await Html.PartialAsync("_SelectField", new SelectFieldModel("regionId", "Region", Model.Regions, f.RegionId?.ToString(), "All regions"))
+                </div>
+                <div class="col-lg-2 d-flex gap-2">
+                    <button class="btn btn-gpd" type="submit">Apply</button>
+                    @if (hasFilters)
+                    {
+                        <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.Party.Id">Reset</a>
+                    }
+                </div>
+            </div>
+        </form>
+
+        @if (Model.Rows.Count == 0)
+        {
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-funnel", "No matching records",
+                "No people for this party match the selected filters. Try removing a filter."))
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table gpd-table align-middle">
+                    <caption class="visually-hidden">People associated with @Model.Party.Name</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Person</th>
+                            <th scope="col">Position</th>
+                            <th scope="col">Administration</th>
+                            <th scope="col">Region / constituency</th>
+                            <th scope="col">Period</th>
+                            <th scope="col">Party at the time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.Rows)
+                        {
+                            <tr>
+                                <th scope="row">
+                                    <span class="gpd-rowperson">
+                                        @await Html.PartialAsync("_Portrait", new PortraitModel(r.Person.FullName, r.Person.PhotoUrl, "sm"))
+                                        <a asp-controller="People" asp-action="Details" asp-route-id="@r.Person.Id">@r.Person.FullName</a>
+                                    </span>
+                                </th>
+                                <td>@r.Position</td>
+                                <td>@r.Administration</td>
+                                <td>@(r.Region is null ? "—" : r.Region + (r.Constituency is null ? "" : " · " + r.Constituency))</td>
+                                <td>@(r.Start is null ? "Dates not recorded" : UiHelpers.Range(r.Start.Value, r.End))</td>
+                                <td>@await Html.PartialAsync("_PartyChip", new PartyChipModel(r.PartyAtTime))</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @await Html.PartialAsync("_Pagination", Model.Paging)
+        }
+    </div>
+</section>
+
+<section class="gpd-section gpd-section--white">
+    <div class="container">
+        <h2 class="gpd-h2">Presidential candidates and election history</h2>
+        <div class="table-responsive">
+            <table class="table gpd-table align-middle">
+                <caption>Presidential candidate recorded for this party in each election.</caption>
+                <thead>
+                    <tr><th scope="col">Election</th><th scope="col">Presidential candidate</th><th scope="col">Result status</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var h in Model.ElectionHistory)
+                    {
+                        <tr>
+                            <th scope="row"><a asp-controller="Elections" asp-action="Presidential" asp-route-year="@h.Year">@h.Year general election</a></th>
+                            <td>@h.PresidentialCandidate</td>
+                            <td>@await Html.PartialAsync("_StatusBadge", h.Status)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <p class="gpd-muted small">Parliamentary candidates, MPs and ministers for this party are listed above and can be filtered by year, administration, position and region.</p>
+    </div>
+</section>

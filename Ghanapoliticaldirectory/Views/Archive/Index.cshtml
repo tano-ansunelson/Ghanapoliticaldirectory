@@ -1,0 +1,18 @@
+﻿@model ArchivePageModel
+@{
+    ViewData["Title"] = "History & Archives";
+    ViewData["Nav"] = "archive";
+}
+@if (Model.Selected is null)
+{
+    @await Html.PartialAsync("_PageHeader", new PageHeaderModel("History & Archives", null))
+    <section class="gpd-section">
+        <div class="container">
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-archive", "Nothing published yet", "Administrations appear here once they have been verified, approved and published."))
+        </div>
+    </section>
+}
+else
+{
+    @await Html.PartialAsync("_ArchiveBody", Model)
+}

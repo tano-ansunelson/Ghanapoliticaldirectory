@@ -1,0 +1,54 @@
+﻿@model PersonCardModel
+@if (Model is not null)
+{
+    <article class="gpd-person">
+        <div class="gpd-person-photo">
+            @await Html.PartialAsync("_Portrait", new PortraitModel(Model.FullName, Model.PhotoUrl, "card"))
+        </div>
+        <div class="gpd-person-body">
+            <p class="gpd-person-role">@Model.PositionTitle</p>
+            <h3 class="gpd-person-name">
+                <a asp-controller="People" asp-action="Details" asp-route-id="@Model.Id">@Model.FullName</a>
+            </h3>
+            <div class="gpd-person-party">@await Html.PartialAsync("_PartyChip", new PartyChipModel(Model.Party))</div>
+            @if (!string.IsNullOrEmpty(Model.Context))
+            {
+                <p class="gpd-person-ctx">@Model.Context</p>
+            }
+            <a class="gpd-link-arrow" asp-controller="People" asp-action="Details" asp-route-id="@Model.Id" aria-label="View profile of @Model.FullName">
+                View profile <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            </a>
+        </div>
+    </article>
+}
+
+
+
+
+
+
+
+
+@* @model PersonCardModel
+<article class="gpd-person">
+    <div class="gpd-person-photo">
+        @if (Model is not null)
+      
+       @await Html.PartialAsync("_Portrait", new PortraitModel(Model.FullName, Model.PhotoUrl, "card"))
+    </div>
+    <div class="gpd-person-body">
+        <p class="gpd-person-role">@Model.PositionTitle</p>
+        <h3 class="gpd-person-name">
+            <a asp-controller="People" asp-action="Details" asp-route-id="@Model.Id">@Model.FullName</a>
+        </h3>
+        <div class="gpd-person-party">@await Html.PartialAsync("_PartyChip", new PartyChipModel(Model.Party))</div>
+        @if (!string.IsNullOrEmpty(Model.Context))
+        {
+            <p class="gpd-person-ctx">@Model.Context</p>
+        }
+        <a class="gpd-link-arrow" asp-controller="People" asp-action="Details" asp-route-id="@Model.Id" aria-label="View profile of @Model.FullName">
+            View profile <i class="bi bi-arrow-right" aria-hidden="true"></i>
+        </a>
+    </div>
+</article>
+ *@

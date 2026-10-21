@@ -1,0 +1,29 @@
+﻿@model IReadOnlyList<AuditEntry>
+@{
+    ViewData["Title"] = "Audit logs";
+}
+<div class="gpd-admin-pagehead">
+    <div>
+        <h1 class="gpd-h1">Audit logs</h1>
+        <p class="gpd-muted mb-0">Sensitive actions are recorded: who did what, to which record, and when.</p>
+    </div>
+</div>
+<div class="gpd-panel">
+    <div class="table-responsive">
+        <table class="table gpd-table align-middle">
+            <caption class="visually-hidden">Audit log entries</caption>
+            <thead><tr><th scope="col">When</th><th scope="col">User</th><th scope="col">Action</th><th scope="col">Record</th></tr></thead>
+            <tbody>
+                @foreach (var e in Model)
+                {
+                    <tr>
+                        <td><time datetime="@e.At.ToString("s")">@e.At.ToString("d MMM yyyy, HH:mm")</time></td>
+                        <td>@e.User</td>
+                        <td>@e.Action</td>
+                        <td>@e.Entity</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

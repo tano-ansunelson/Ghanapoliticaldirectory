@@ -1,0 +1,211 @@
+﻿@model PersonProfileModel
+@{
+    ViewData["Title"] = Model.FullName;
+    ViewData["Nav"] = "";
+
+    var today = DateOnly.FromDateTime(DateTime.UtcNow);
+    var current = Model.ServiceRecords.Where(r => r.IsCurrent).OrderBy(r => r.Start).ToList();
+    var ordered = Model.ServiceRecords.OrderByDescending(r => r.Start).ToList();
+
+    // ----- timeline geometry (all positions are derived from recorded dates) -----
+    var minYear = ordered.Count == 0 ? today.Year - 1 : ordered.Min(r => r.Start.Year);
+    var axisStart = new DateOnly(minYear, 1, 1);
+    var latestEnd = ordered.Where(r => r.End is not null).Select(r => r.End!.Value).DefaultIfEmpty(DateOnly.MinValue).Max();
+    var axisEnd = latestEnd > new DateOnly(today.Year + 1, 1, 1) ? latestEnd : new DateOnly(today.Year + 1, 1, 1);
+    double span = Math.Max(1, axisEnd.DayNumber - axisStart.DayNumber);
+    var step = Math.Max(1, (int)Math.Ceiling((axisEnd.Year - minYear) / 6.0));
+    // var axisEnd = new DateOnly(today.Year + 1, 1, 1);
+    // double span = Math.Max(1, axisEnd.DayNumber - axisStart.DayNumber);
+    // var step = Math.Max(1, (int)Math.Ceiling((today.Year + 1 - minYear) / 6.0));
+    string Pct(double v) => (v * 100).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%";
+    var currentPositions = current.Select(r => r.Title).ToList();
+}
+
+<section class="gpd-profile-hero">
+    <div class="container">
+        <nav aria-label="Breadcrumb">
+            <ol class="breadcrumb gpd-crumbs">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.FullName</li>
+            </ol>
+        </nav>
+        <div class="gpd-profile-head">
+            <div class="gpd-profile-photo">@await Html.PartialAsync("_Portrait", new PortraitModel(Model.FullName, Model.PhotoUrl, "xl"))</div>
+            <div>
+                <h1 class="gpd-h1">@Model.FullName <span class="gpd-sample-tag">Sample profile</span></h1>
+                @if (currentPositions.Count > 0)
+                {
+                    <p class="gpd-lead mb-2">Currently: @string.Join(" and ", currentPositions)</p>
+                }
+                else
+                {
+                    <p class="gpd-lead mb-2">No current office recorded.</p>
+                }
+                <div class="gpd-affiliations" aria-label="Party affiliation history">
+                    @foreach (var a in Model.Affiliations.OrderBy(x => x.Start))
+                    {
+                        <span class="gpd-affil">
+                            @await Html.PartialAsync("_PartyChip", new PartyChipModel(a.Party))
+                            <span class="gpd-affil-dates">@a.Start.Year – @(a.End is null ? "present" : a.End.Value.Year.ToString())</span>
+                        </span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container gpd-profile-layout">
+    <div class="row g-4">
+        <div class="col-lg-8">
+
+            @if (current.Count > 1)
+            {
+                <div class="gpd-callout" role="note">
+                    <i class="bi bi-diagram-3" aria-hidden="true"></i>
+                    <div>
+                        <strong>Holds @current.Count positions at the same time.</strong>
+                        Each position is a separate service record with its own dates and source. Ending one does not end the others.
+                    </div>
+                </div>
+            }
+
+            <section class="gpd-block" aria-labelledby="bio">
+                <h2 id="bio" class="gpd-h2">Biography</h2>
+                @if (string.IsNullOrWhiteSpace(Model.Biography))
+                {
+                    <p class="gpd-muted">No biography has been published yet.</p>
+                }
+                else
+                {
+
+                    <p>@Model.Biography</p>
+                }
+            </section>
+
+            <section class="gpd-block" aria-labelledby="timeline-h">
+                <h2 id="timeline-h" class="gpd-h2">Service over time</h2>
+                <p class="gpd-muted small">Bars use the recorded start and end dates of each service record. The same information is listed in full below.</p>
+                <div class="gpd-timeline" aria-hidden="true">
+                    <div class="gpd-timeline-axis">
+                        @for (var y = minYear; y <= axisEnd.Year; y += step)
+                       @*  @for (var y = minYear; y <= today.Year + 1; y += step) *@
+                        {
+                            <span style="left:@Pct((new DateOnly(y, 1, 1).DayNumber - axisStart.DayNumber) / span)">@y</span>
+                        }
+                    </div>
+                    @foreach (var r in ordered.OrderBy(x => x.Start))
+                    {
+                        var barEnd = Math.Min((r.End ?? today).DayNumber, axisEnd.DayNumber);
+                        var left = Math.Clamp((r.Start.DayNumber - axisStart.DayNumber) / span, 0, 1);
+                        var width = Math.Clamp((barEnd - r.Start.DayNumber) / span, 0, 1 - left);
+                        <div class="gpd-timeline-lane">
+                            <div class="gpd-timeline-bar gpd-bar--@(r.Kind.Replace(" ", "").ToLowerInvariant()) @(r.IsCurrent ? "is-current" : "")"
+                                 style="left:@Pct(left);width:@Pct(Math.Max(width, 0.01))">
+                                <span>@r.Title</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </section>
+
+            <section class="gpd-block" aria-labelledby="records-h">
+                <h2 id="records-h" class="gpd-h2">Positions and service records</h2>
+                <ol class="gpd-records list-unstyled">
+                    @foreach (var r in ordered)
+                    {
+                        <li class="gpd-record @(r.IsCurrent ? "is-current" : "")">
+                            <div class="gpd-record-head">
+                                <h3>@r.Title</h3>
+                                <span class="gpd-badge @(r.IsCurrent ? "gpd-badge--declared" : "gpd-badge--none")">
+                                    <i class="bi @(r.IsCurrent ? "bi-circle-fill" : "bi-archive")" aria-hidden="true"></i>@(r.IsCurrent ? "Current" : "Ended")
+                                </span>
+                            </div>
+                            <dl class="gpd-meta gpd-meta--row">
+                                <div><dt>Period</dt><dd>@UiHelpers.Range(r.Start, r.End)</dd></div>
+                                @if (!string.IsNullOrEmpty(r.Detail))
+                                {
+                                    <div><dt>Ministry / constituency</dt><dd>@r.Detail</dd></div>
+                                }
+                                @if (!string.IsNullOrEmpty(r.Administration))
+                                {
+                                    <div><dt>Administration</dt><dd>@r.Administration</dd></div>
+                                }
+                                <div><dt>Appointment status</dt><dd>@r.AppointmentStatus</dd></div>
+                                <div><dt>Party at the time</dt><dd>@await Html.PartialAsync("_PartyChip", new PartyChipModel(r.PartyAtTime))</dd></div>
+                            </dl>
+                            <div class="gpd-record-links">
+                                @if (r.RelatedPage is not null)
+                                {
+                                    <a class="gpd-link-arrow" href="@r.RelatedPage.Url">@r.RelatedPage.Text <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                                }
+                                @if (r.Source is not null)
+                                {
+                                    <a class="gpd-link-ext" href="@r.Source.Url" target="_blank" rel="noopener noreferrer">
+                                        Source: @r.Source.Title <span class="visually-hidden">(opens in a new tab)</span>
+                                    </a>
+                                }
+                            </div>
+                        </li>
+                    }
+                </ol>
+            </section>
+
+            <section class="gpd-block" aria-labelledby="elect-h">
+                <h2 id="elect-h" class="gpd-h2">Election history</h2>
+                @if (Model.ElectionHistory.Count == 0)
+                {
+                    @await Html.PartialAsync("_EmptyState", new EmptyStateModel("bi-inbox", "No election history recorded", "This person has no recorded candidacies yet."))
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table gpd-table align-middle">
+                            <caption>Candidacies and their result status. Party is the party at the time of that election.</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Year</th>
+                                    <th scope="col">Contest</th>
+                                    <th scope="col">Constituency</th>
+                                    <th scope="col">Party at the time</th>
+                                    <th scope="col">Result status</th>
+                                    <th scope="col">Outcome</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var e in Model.ElectionHistory)
+                                {
+                                    <tr>
+                                        <th scope="row">@e.Year</th>
+                                        <td>@e.Contest</td>
+                                        <td>@(e.Constituency ?? "—")</td>
+                                        <td>@await Html.PartialAsync("_PartyChip", new PartyChipModel(e.PartyAtTime))</td>
+                                        <td>@await Html.PartialAsync("_StatusBadge", e.Status)</td>
+                                        <td>@(e.Outcome ?? "—")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </section>
+        </div>
+
+        <aside class="col-lg-4" aria-label="Related information">
+            <section class="gpd-card gpd-side">
+                <h2 class="gpd-h3">One profile, many pages</h2>
+                <p class="gpd-muted small">This same person record appears on each of these pages. It is never duplicated.</p>
+                <ul class="list-unstyled gpd-side-links">
+                    @foreach (var l in Model.AppearsOn)
+                    {
+                        <li><a href="@l.Url"><i class="bi bi-arrow-right-short" aria-hidden="true"></i>@l.Text</a></li>
+                    }
+                </ul>
+            </section>
+            <section class="gpd-card gpd-side">
+                <h2 class="gpd-h3">References and sources</h2>
+                @await Html.PartialAsync("_SourceList", Model.Sources)
+            </section>
+        </aside>
+    </div>
+</div>

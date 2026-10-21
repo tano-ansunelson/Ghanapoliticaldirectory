@@ -1,0 +1,58 @@
+﻿@{
+    var current = (ViewContext.HttpContext.Request.Path.Value ?? "").TrimEnd('/').ToLowerInvariant();
+    var groups = new (string Heading, (string Label, string Icon, string Url)[] Items)[]
+    {
+        ("Overview", new[] { ("Dashboard", "bi-speedometer2", "/admin") }),
+        ("Directory", new[]
+        {
+            ("People", "bi-people", "/admin/people"),
+            ("Political Parties", "bi-flag", "/admin/parties"),
+            ("Positions and Appointments", "bi-diagram-3", "/admin/appointments"),
+            ("Parliament", "bi-bank", "/admin/parliament"),
+            ("Ministries", "bi-briefcase", "/admin/ministries"),
+            ("Administrations", "bi-clock-history", "/admin/administrations"),
+            ("Import from Excel", "bi-file-earmark-spreadsheet", "/admin/import")
+        }),
+        ("Elections", new[]
+        {
+            ("Elections", "bi-calendar-event", "/admin/elections"),
+            ("Candidates", "bi-person-badge", "/admin/candidates"),
+            ("Election Results", "bi-bar-chart-line", "/admin/results"),
+            ("Regions and Constituencies", "bi-geo-alt", "/admin/regions")
+        }),
+        ("Review", new[]
+        {
+            ("Review queue", "bi-list-check", "/admin/review")
+        }),
+        ("System", new[]
+        {
+            ("User Management", "bi-person-gear", "/admin/users"),
+            ("Audit Logs", "bi-journal-text", "/admin/audit")
+        })
+    };
+}
+<a class="gpd-sidebar-brand" asp-controller="Admin" asp-action="Dashboard">
+    <span class="gpd-brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 36 36" width="30" height="30" focusable="false"><rect width="36" height="36" rx="8" fill="#0b5d3b" /><polygon points="18,6 21.5,14.5 30.5,15 23.5,20.8 25.8,29.5 18,24.6 10.2,29.5 12.5,20.8 5.5,15 14.5,14.5" fill="#f2c230" /></svg>
+    </span>
+    <span><strong>Directory admin</strong><small>Ghana Political Directory</small></span>
+</a>
+<nav aria-label="Admin sections">
+    @foreach (var group in groups)
+    {
+        <div class="gpd-sidebar-group">
+            <h2 class="gpd-sidebar-h">@group.Heading</h2>
+            <ul class="list-unstyled mb-0">
+                @foreach (var item in group.Items)
+                {
+                    var active = item.Url == "/admin" ? current == "/admin" : current.StartsWith(item.Url);
+                    <li>
+                        <a class="gpd-sidebar-link @(active ? "active" : "")" href="@item.Url" aria-current="@(active ? "page" : null)">
+                            <i class="bi @item.Icon" aria-hidden="true"></i><span>@item.Label</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+</nav>
