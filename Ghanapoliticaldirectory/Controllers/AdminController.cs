@@ -243,10 +243,9 @@ public class AdminController : Controller
     [Authorize(Policy = "perm:" + Permissions.RecordsCorrect)]
     public async Task<IActionResult> CloseAdministration(int id, DateOnly? endDate, CancellationToken ct)
     {
-        if (endDate is null) { TempData["Success"] = "Enter the end date.";
-            return RedirectToAction(nameof(Administrations)); }
+        if (endDate is null) { TempData["Success"] = "Enter the end date."; return RedirectToAction(nameof(Administrations)); }
         var r = await _government.CloseAdministrationAsync(id, endDate.Value, ct);
-        TempData["Success"] = r.Ok ? $"Administration closed. {r.Value} open appointment(s) belonging to it were ended on that date." : r.FirstError;
+        TempData["Success"] = r.Ok ? $"Administration closed. {r.Value} open appointment(s) and parliamentary term(s) belonging to it were ended on that date." : r.FirstError;
         return RedirectToAction(nameof(Administrations));
     }
 

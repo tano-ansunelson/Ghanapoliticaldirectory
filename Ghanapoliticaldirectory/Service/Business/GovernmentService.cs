@@ -123,7 +123,15 @@ public sealed class GovernmentService : ServiceBase
             if (electionCycleId is int cid && !await Db.ElectionCycles.AnyAsync(c => c.Id == cid && !c.IsArchived, ct))
                 return Result.Fail<int>(ServiceFailure.Invalid, "admin.cycle_missing", "The election cycle does not exist.");
 
-            var a = new Administration { Name = name.Trim(), StartDate = start, ElectionCycleId = electionCycleId, Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(), IsConfirmed = false };
+            var a = new Administration
+            { 
+                Name = name.Trim(),
+                StartDate = start,
+                ElectionCycleId = electionCycleId,
+                Description = string.IsNullOrWhiteSpace(description) 
+                ? null : description.Trim(), 
+                IsConfirmed = false 
+            };
             Db.Administrations.Add(a);
             await Db.SaveChangesAsync(ct);
             Audit("administration.created", nameof(Administration), a.Id, $"Created administration \"{a.Name}\" (unconfirmed)");
@@ -176,16 +184,36 @@ public sealed class GovernmentService : ServiceBase
             foreach (var c in closures)
             {
                 var a = open.First(x => x.Id == c.RecordId);
-                await SnapshotIfReviewedAsync(a, a.Stage, new { a.EndDate, a.Status, a.EndReason }, c.Reason, ct);
+                await SnapshotIfReviewedAsync(a, a.Stage, 
+                    new {
+                        a.EndDate,
+                        a.Status,
+                        a.EndReason
+                        },
+                    c.Reason, ct);
                 CloseAppointment(a, c.EndDate, c.Reason);
             }
+            var openTerms = await Db.ParliamentaryTerms
+              .Where(t => t.AdministrationId == administrationId && t.EndDate == null && !t.IsArchived)
+              .ToListAsync(ct);
+            foreach (var t in openTerms.Where(t => endDate < t.StartDate))
+                report.Error("change.term_end_before_start", $"A parliamentary term started on {t.StartDate:d MMM yyyy}, after the chosen end date.", "EndDate");
+            if (!report.IsValid) return Result.Invalid<int>(report);
+            foreach (var t in openTerms)
+            {
+                await SnapshotIfReviewedAsync(t, t.Stage, new { t.EndDate, t.Notes }, "Administration ended", ct);
+                t.EndDate = endDate;
+                t.Notes = string.IsNullOrWhiteSpace(t.Notes) ? "Ended: Administration ended" : $"{t.Notes} | Ended: Administration ended";
+            }
+
+
             admin.EndDate = endDate;
 
             Audit("administration.closed", nameof(Administration), admin.Id,
-                $"Closed administration \"{admin.Name}\" on {endDate:yyyy-MM-dd}; ended {closures.Count} appointment(s)",
-                new { closedAppointmentIds = closures.Select(c => c.RecordId).ToList() });
+                $"Closed administration \"{admin.Name}\" on {endDate:yyyy-MM-dd}; ended {closures.Count} appointment(s) and {openTerms.Count} parliamentary term(s)",
+                new { closedAppointmentIds = closures.Select(c => c.RecordId).ToList(), closedTermIds = openTerms.Select(t => t.Id).ToList() });
             await Db.SaveChangesAsync(ct);
-            return Result.Ok(closures.Count, report);
+            return Result.Ok(closures.Count + openTerms.Count, report);
         }, ct);
     }
 
