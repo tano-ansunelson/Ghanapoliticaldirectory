@@ -75,6 +75,9 @@ public static class AddPersonValidator
                     r.Error("position.cycle_required", "Member of Parliament: select the election cycle or term.", $"{p.Kind}.ElectionCycleId");
                 if (p.ConstituencyId is null)
                     r.Error("position.constituency_required", "Member of Parliament: select a region and constituency.", $"{p.Kind}.ConstituencyId");
+                if (p.AdministrationId is null)
+                    r.Error("position.administration_required", "Member of Parliament: select the administration they served under.", $"{p.Kind}.AdministrationId");
+               
                 if (p.PartyAtElectionId is not null && p.IndependentAtElection)
                     r.Error("position.party_conflict", "Member of Parliament: choose a party or 'independent', not both.", $"{p.Kind}.PartyAtElectionId");
             }

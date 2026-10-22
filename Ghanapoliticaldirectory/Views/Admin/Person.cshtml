@@ -76,12 +76,13 @@
         <div class="table-responsive">
             <table class="table gpd-table align-middle">
                 <caption class="visually-hidden">Parliamentary terms</caption>
-                <thead><tr><th scope="col">Constituency</th><th scope="col">Period</th><th scope="col">Review</th><th scope="col">End it</th></tr></thead>
+                <thead><tr><th scope="col">Constituency</th><th scope="col">Administration</th><th scope="col">Period</th><th scope="col">Review</th><th scope="col">End it</th></tr></thead>
                 <tbody>
                     @foreach (var t in p.Terms)
                     {
                         <tr>
                             <th scope="row">@t.Constituency <span class="gpd-muted">· @t.Region</span></th>
+                            <td>@(t.Administration ?? "Not recorded")</td>
                             <td>@t.Start.ToString("d MMM yyyy") – @(t.End?.ToString("d MMM yyyy") ?? "present")</td>
                             <td>@t.Stage</td>
                             <td>

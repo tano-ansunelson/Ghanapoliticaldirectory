@@ -104,6 +104,22 @@ public sealed record TermHolding(int RecordId, int PersonId, int ConstituencyId,
 
 public static class ParliamentaryTermRules
 {
+    /// <summary>An MP's term belongs to an administration. Only a clear contradiction is an error; a start before the administration began is a warning.</summary>
+    public static ValidationReport CheckAdministration(DateOnly? start, DateOnly? end, AdministrationPeriod? administration)
+    {
+        var r = new ValidationReport();
+        if (administration is null || start is null) return r;
+        var adminEnd = administration.Range.End;
+        if (adminEnd is not null && start > adminEnd)
+            r.Error("term.after_administration", "Member of Parliament: the term starts after the selected administration ended.", "Start");
+        else if (end is not null && end < administration.Range.Start)
+            r.Error("term.before_administration", "Member of Parliament: the term ends before the selected administration began.", "End");
+        else if (start < administration.Range.Start)
+            r.Warn("term.starts_before_administration", "Member of Parliament: the term starts before the administration began. Check the date.", "Start");
+        return r;
+    }
+
+
     /// <summary>A constituency has one MP at a time, and a person sits for one constituency at a time.</summary>
     public static ValidationReport Validate(
         int personId,

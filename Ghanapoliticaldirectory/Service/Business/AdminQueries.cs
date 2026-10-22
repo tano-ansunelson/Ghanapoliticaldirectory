@@ -8,18 +8,17 @@ namespace Ghanapoliticaldirectory.Business;
 public sealed record PartyRow(int Id, string Name, string Abbreviation, DateOnly? FoundedOn, string? Description);
 public sealed record AffiliationRow(int Id, string Party, DateOnly Start, DateOnly? End, WorkflowStage Stage);
 public sealed record AppointmentAdminRow(int Id, string Title, string? Ministry, string? Administration, DateOnly Start, DateOnly? End, AppointmentStatus Status, WorkflowStage Stage);
-public sealed record TermAdminRow(int Id, string Constituency, string Region, DateOnly Start, DateOnly? End, WorkflowStage Stage);
+public sealed record TermAdminRow(int Id, string Constituency, string Region, DateOnly Start, DateOnly? End, WorkflowStage Stage, string? Administration = null);
 public sealed record CandidacyRow(int Id, string Contest, string Party, CandidateStatus Status, WorkflowStage Stage);
-
 public sealed record PersonEditView(int Id, string FullName, string? Biography, string? AdditionalInfo, WorkflowStage Stage, bool IsArchived, string? PhotoUrl, string? PhotoAlt);
 public sealed record PersonAdminView(
     int Id, string FullName, WorkflowStage Stage, bool IsArchived,
     IReadOnlyList<AffiliationRow> Affiliations, IReadOnlyList<AppointmentAdminRow> Appointments,
     IReadOnlyList<TermAdminRow> Terms, IReadOnlyList<CandidacyRow> Candidacies);
 public sealed record ListedAppointment(int Id, int PersonId, string Person, string Title, string? Ministry, string? Administration, DateOnly Start, DateOnly? End, WorkflowStage Stage);
-public sealed record ListedTerm(int Id, int PersonId, string Person, string Constituency, string Region, DateOnly Start, DateOnly? End, WorkflowStage Stage);
-public sealed record CandidateListRow(int Id, int PersonId, string Name, string Party, string? RunningMate, WorkflowStage Stage);
+public sealed record ListedTerm(int Id, int PersonId, string Person, string Constituency, string Region, DateOnly Start, DateOnly? End, WorkflowStage Stage, string? Administration = null);
 public sealed record ContestRow(int Id, string Cycle, string Label, ContestType Type, int Round, int Candidates, WorkflowStage? ResultStage);
+public sealed record CandidateListRow(int Id, int PersonId, string Name, string Party, string? RunningMate, WorkflowStage Stage);
 public sealed record ContestInfo(int? ContestId, string Label, IReadOnlyList<CandidateListRow> Candidates, WorkflowStage? ResultStage);
 public sealed record ConstituencyOption(int Id, string Name, string Region);
 
@@ -58,7 +57,7 @@ public sealed class AdminQueries : ServiceBase
         var apps = await Db.Appointments.AsNoTracking().Where(a => a.PersonId == id && !a.IsArchived)
             .Select(a => new { a.Id, a.Position.Title, Ministry = a.Ministry != null ? a.Ministry.Name : null, Admin = a.Administration != null ? a.Administration.Name : null, a.StartDate, a.EndDate, a.Status, a.Stage }).ToListAsync(ct);
         var terms = await Db.ParliamentaryTerms.AsNoTracking().Where(t => t.PersonId == id && !t.IsArchived)
-            .Select(t => new { t.Id, Seat = t.Constituency.Name, Region = t.Constituency.Region.Name, t.StartDate, t.EndDate, t.Stage }).ToListAsync(ct);
+            .Select(t => new { t.Id, Seat = t.Constituency.Name, Region = t.Constituency.Region.Name, t.StartDate, t.EndDate, t.Stage, Admin = t.Administration != null ? t.Administration.Name : null }).ToListAsync(ct);
         var cands = await Db.Candidates.AsNoTracking().Where(c => c.PersonId == id && !c.IsArchived)
             .Select(c => new {
                 c.Id,
@@ -72,7 +71,7 @@ public sealed class AdminQueries : ServiceBase
         return new PersonAdminView(p.Id, p.FullName, p.Stage, p.IsArchived,
             aff.OrderBy(a => a.StartDate).Select(a => new AffiliationRow(a.Id, a.Party ?? "Independent / no party", a.StartDate, a.EndDate, a.Stage)).ToList(),
             apps.OrderBy(a => a.StartDate).Select(a => new AppointmentAdminRow(a.Id, a.Title, a.Ministry, a.Admin, a.StartDate, a.EndDate, a.Status, a.Stage)).ToList(),
-            terms.OrderBy(t => t.StartDate).Select(t => new TermAdminRow(t.Id, t.Seat, t.Region, t.StartDate, t.EndDate, t.Stage)).ToList(),
+            terms.OrderBy(t => t.StartDate).Select(t => new TermAdminRow(t.Id, t.Seat, t.Region, t.StartDate, t.EndDate, t.Stage, t.Admin)).ToList(),
             cands.Select(c => new CandidacyRow(c.Id, c.Cycle + (c.Seat is null ? " · Presidential" : " · " + c.Seat), c.Party ?? "Independent", c.Status, c.Stage)).ToList());
     }
 
@@ -100,12 +99,11 @@ public sealed class AdminQueries : ServiceBase
         var query = Db.ParliamentaryTerms.AsNoTracking().Where(t => !t.IsArchived);
         if (!string.IsNullOrWhiteSpace(q)) { var n = q.Trim().ToLower(); query = query.Where(t => t.Person.FullName.ToLower().Contains(n) || t.Constituency.Name.ToLower().Contains(n)); }
         var rows = await query.OrderByDescending(t => t.StartDate).Take(take)
-            .Select(t => new { t.Id, t.PersonId, Person = t.Person.FullName, Seat = t.Constituency.Name, Region = t.Constituency.Region.Name, t.StartDate, t.EndDate, t.Stage }).ToListAsync(ct);
-        return rows.Select(t => new ListedTerm(t.Id, t.PersonId, t.Person, t.Seat, t.Region, t.StartDate, t.EndDate, t.Stage)).ToList();
+            .Select(t => new { t.Id, t.PersonId, Person = t.Person.FullName, Seat = t.Constituency.Name, Region = t.Constituency.Region.Name, t.StartDate, t.EndDate, t.Stage, Admin = t.Administration != null ? t.Administration.Name : null }).ToListAsync(ct);
+        return rows.Select(t => new ListedTerm(t.Id, t.PersonId, t.Person, t.Seat, t.Region, t.StartDate, t.EndDate, t.Stage, t.Admin)).ToList();
     }
 
-
-
+    /// <summary>Contests that already have candidates, with where their result stands.</summary>
     /// <summary>The contest being worked on and the candidates it already has. A contest that does not exist yet comes back empty.</summary>
     public async Task<ContestInfo?> ContestInfoAsync(int cycleId, ContestType type, int? constituencyId, int round, CancellationToken ct = default)
     {
@@ -141,11 +139,6 @@ public sealed class AdminQueries : ServiceBase
         return new ContestInfo(contest.Id, label, rows, resultStage);
     }
 
-
-
-
-
-    /// <summary>Contests that already have candidates, with where their result stands.</summary>
     public async Task<IReadOnlyList<ContestRow>> ContestsAsync(int? cycleId, CancellationToken ct = default)
     {
         var query = Db.ElectionContests.AsNoTracking().Where(c => !c.IsArchived);

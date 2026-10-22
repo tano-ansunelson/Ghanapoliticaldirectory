@@ -13,7 +13,7 @@
     var isMp = k == "Mp";
     var isMinistry = k is "Minister" or "DeputyMinister";
     var isOther = k == "Other";
-    var showAdmin = !isMp;
+    var showAdmin = true;
     var showStatus = !isMp;
     var startLabel = isMinistry ? "Appointment date" : "Start date";
 }
@@ -28,7 +28,10 @@
             <div class="col-md-12">
                 <label class="form-label" for="@Id("Title")">Position title <span class="gpd-req" aria-hidden="true">*</span></label>
                 <input class="form-control" id="@Id("Title")" name="@Name("Title")" value="@i.Title" />
-                @if (Err("Title") != "") { <div class="invalid-feedback d-block">@Err("Title")</div> }
+                @if (Err("Title") != "")
+                {
+                    <div class="invalid-feedback d-block">@Err("Title")</div>
+                }
             </div>
         }
 
@@ -36,7 +39,10 @@
         {
             <div class="col-md-6">
                 @await Html.PartialAsync("_SelectField", new SelectFieldModel(Name("ElectionCycleId"), "Election cycle or parliamentary term", o.ElectionCycles, i.ElectionCycleId, "Select a cycle", Required: true))
-                @if (Err("ElectionCycleId") != "") { <div class="invalid-feedback d-block">@Err("ElectionCycleId")</div> }
+                @if (Err("ElectionCycleId") != "")
+                {
+                    <div class="invalid-feedback d-block">@Err("ElectionCycleId")</div>
+                }
             </div>
             <div class="col-md-6">
                 @await Html.PartialAsync("_SelectField", new SelectFieldModel(Name("PartyAtTimeId"), "Party affiliation at the time of the election", o.Parties, i.PartyAtTimeId, "Independent / no party"))
@@ -51,7 +57,10 @@
                             disabled="@(string.IsNullOrEmpty(i.RegionId))">
                         <option value="">@(string.IsNullOrEmpty(i.RegionId) ? "Choose a region first" : "Select a constituency")</option>
                     </select>
-                    @if (Err("ConstituencyId") != "") { <div class="invalid-feedback d-block">@Err("ConstituencyId")</div> }
+                    @if (Err("ConstituencyId") != "")
+                    {
+                        <div class="invalid-feedback d-block">@Err("ConstituencyId")</div>
+                    }
                 </div>
             </div>
         }
@@ -59,8 +68,11 @@
         @if (showAdmin)
         {
             <div class="col-md-6">
-                @await Html.PartialAsync("_SelectField", new SelectFieldModel(Name("AdministrationId"), isOther ? "Administration (if applicable)" : "Administration", o.Administrations, i.AdministrationId, "Select an administration", Required: !isOther))
-                @if (Err("AdministrationId") != "") { <div class="invalid-feedback d-block">@Err("AdministrationId")</div> }
+                @await Html.PartialAsync("_SelectField", new SelectFieldModel(Name("AdministrationId"), isOther ? "Administration (if applicable)" : isMp ? "Administration they served under" : "Administration", o.Administrations, i.AdministrationId, "Select an administration", Required: !isOther))
+                @if (Err("AdministrationId") != "")
+                {
+                    <div class="invalid-feedback d-block">@Err("AdministrationId")</div>
+                }
             </div>
         }
 
@@ -68,20 +80,29 @@
         {
             <div class="col-md-6">
                 @await Html.PartialAsync("_SelectField", new SelectFieldModel(Name("MinistryId"), "Ministry", o.Ministries, i.MinistryId, "Select a ministry", Required: true))
-                @if (Err("MinistryId") != "") { <div class="invalid-feedback d-block">@Err("MinistryId")</div> }
+                @if (Err("MinistryId") != "")
+                {
+                    <div class="invalid-feedback d-block">@Err("MinistryId")</div>
+                }
             </div>
         }
 
         <div class="col-md-6 col-lg-3">
             <label class="form-label" for="@Id("Start")">@startLabel <span class="gpd-req" aria-hidden="true">*</span></label>
             <input class="form-control" type="date" id="@Id("Start")" name="@Name("Start")" value="@D(i.Start)" data-start="@k" />
-            @if (Err("Start") != "") { <div class="invalid-feedback d-block">@Err("Start")</div> }
+            @if (Err("Start") != "")
+            {
+                <div class="invalid-feedback d-block">@Err("Start")</div>
+            }
         </div>
         <div class="col-md-6 col-lg-3">
             <label class="form-label" for="@Id("End")">End date</label>
             <input class="form-control" type="date" id="@Id("End")" name="@Name("End")" value="@D(i.End)" data-end="@k" aria-describedby="@(Id("End"))-help" />
             <div class="form-text" id="@(Id("End"))-help">Leave empty while the position continues.</div>
-            @if (Err("End") != "") { <div class="invalid-feedback d-block">@Err("End")</div> }
+            @if (Err("End") != "")
+            {
+                <div class="invalid-feedback d-block">@Err("End")</div>
+            }
         </div>
 
         @if (showStatus)
@@ -97,3 +118,4 @@
         </div>
     </div>
 </fieldset>
+

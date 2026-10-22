@@ -10,8 +10,11 @@ namespace Ghanapoliticaldirectory.Models
         public Constituency Constituency { get; set; } = null!;
         public int? ElectionCycleId { get; set; }
         public ElectionCycle? ElectionCycle { get; set; }
+        public int? AdministrationId { get; set; }
+        public Administration? Administration { get; set; }
         /// <summary>The candidacy that won the seat, when recorded.</summary>
         public int? CandidateId { get; set; }
+
         public Candidate? Candidate { get; set; }
         public TermKind Kind { get; set; } = TermKind.General;
         public DateOnly StartDate { get; set; }
