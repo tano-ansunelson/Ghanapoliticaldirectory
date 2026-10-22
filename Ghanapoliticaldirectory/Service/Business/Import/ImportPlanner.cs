@@ -5,11 +5,10 @@ using System.Globalization;
 
 namespace Ghanapoliticaldirectory.Service.Business.Import;
 
-    public class ImportPlanner
-    {
-
+public static class ImportPlanner
+{
     public static readonly string[] Columns =
-  {
+    {
         "Full Name", "Position", "Start Date", "End Date", "Administration", "Ministry", "Election Year", "Region",
         "Constituency", "Party At Election", "Party", "Party Since", "Title", "Source", "Biography",
         "Person Ref", "Existing Person Id", "Different Person"
@@ -17,12 +16,7 @@ namespace Ghanapoliticaldirectory.Service.Business.Import;
 
     private static readonly string[] DateFormats =
     {
-        "yyyy-MM-dd", "d/M/yyyy", 
-        
-        "dd/MM/yyyy", "d-M-yyyy",
-        "dd-MM-yyyy", "d.M.yyyy",
-        "d MMMM yyyy", "d MMM yyyy",
-        "MMMM d, yyyy", "yyyy/MM/dd"
+        "yyyy-MM-dd", "d/M/yyyy", "dd/MM/yyyy", "d-M-yyyy", "dd-MM-yyyy", "d.M.yyyy", "d MMMM yyyy", "d MMM yyyy", "MMMM d, yyyy", "yyyy/MM/dd"
     };
 
     public static ImportPlan Plan(SheetData sheet, ImportLookups lookups, DateOnly today)
@@ -286,6 +280,8 @@ namespace Ghanapoliticaldirectory.Service.Business.Import;
                     var forPerson = fileTerms.Where(t => t.PersonId == filePersonId).ToList();
                     var check = ParliamentaryTermRules.Validate(filePersonId, seatId!.Value, start, end, inSeat, forPerson);
                     foreach (var e in check.Errors) Err("Start Date", e.Message + " (in this file)");
+                    var adminCheck = ParliamentaryTermRules.CheckAdministration(start, end, admin is null ? null : new AdministrationPeriod(admin.Id, new DateRange(admin.Start, admin.End)));
+                    foreach (var e in adminCheck.Errors) Err("Administration", e.Message);
                     if (errors.Count == 0) fileTerms.Add(new TermHolding(nextRecord++, filePersonId, seatId!.Value, new DateRange(start.Value, end)));
                 }
                 else
@@ -423,7 +419,6 @@ namespace Ghanapoliticaldirectory.Service.Business.Import;
         var list = items.Take(12).ToList();
         return list.Count == 0 ? "(none yet)" : string.Join(", ", list.Select(x => $"\"{x}\""));
     }
-
-
 }
+
 

@@ -1,6 +1,6 @@
 ﻿@model ImportPageModel
 @using Ghanapoliticaldirectory.Business
-@* @using Ghanapoliticaldirectory.Business.Import *@
+
 @using Ghanapoliticaldirectory.Service.Business.Import
 @{
     ViewData["Title"] = "Import from Excel"; var plan = Model.Plan; var done = Model.Outcome; var r = Model.Reference;
@@ -46,7 +46,7 @@
                     <strong>@done.Imported</strong> imported as drafts@(done.Partly > 0 ? $", {done.Partly} only partly" : "")@(done.Failed > 0 ? $", {done.Failed} failed" : "")@(done.Skipped > 0 ? $", {done.Skipped} skipped (problems in the file)" : "").
                     @if (done.Imported + done.Partly > 0)
                     {
-                        <text>Next: open the <a asp-action="Review">review queue</a> to submit, verify, approve and publish them.</text>
+                        <text>Next: open the <a asp-controller="Admin" asp-action="Review">review queue</a> to submit, verify, approve and publish them.</text>
                     }
                 </p>
                 @if (done.Skipped + done.Failed + done.Partly > 0)
@@ -172,7 +172,7 @@
             <dt>Start Date *, End Date</dt>
             <dd>A real Excel date, or text like 2025-01-07 or 07/01/2025 (day first). Leave End Date empty if the position is still held.</dd>
             <dt>Administration</dt>
-            <dd>Required for President, Vice President, Minister, Deputy Minister and Chief of Staff.</dd>
+            <dd>Required for every position, including Member of Parliament (the administration they served under).</dd>
             <dt>Ministry</dt>
             <dd>Required for Minister and Deputy Minister. Earlier names of a ministry are also accepted.</dd>
             <dt>Election Year, Constituency, Region</dt>

@@ -267,6 +267,16 @@ public sealed class PersonService : ServiceBase
         if (!await Db.Constituencies.AnyAsync(c => c.Id == seatId && !c.IsArchived, ct))
         { report.Error("position.constituency_missing", "Member of Parliament: the selected constituency does not exist.", "MemberOfParliament.ConstituencyId"); return; }
 
+
+        Administration? admin = null;
+        if (p.AdministrationId is int aid)
+        {
+            admin = await Db.Administrations.FirstOrDefaultAsync(a => a.Id == aid && !a.IsArchived, ct);
+            if (admin is null) { report.Error("position.administration_missing", "Member of Parliament: the selected administration does not exist.", "MemberOfParliament.AdministrationId"); return; }
+        }
+        var adminCheck = ParliamentaryTermRules.CheckAdministration(p.Start, p.End, admin is null ? null : new AdministrationPeriod(admin.Id, new DateRange(admin.StartDate, admin.EndDate)));
+        report.AddRange(adminCheck);
+        if (!adminCheck.IsValid) return;
         // The party the person stood for at that election: chosen explicitly, else read from a dated affiliation.
         // If neither exists the party is unknown, and we ask rather than guess (and never use today's party).
         int? partyId = p.PartyAtElectionId;
@@ -314,6 +324,7 @@ public sealed class PersonService : ServiceBase
             Person = person,
             ConstituencyId = seatId,
             ElectionCycleId = cycleId,
+            AdministrationId= p.AdministrationId,
             Candidate = candidate,
             StartDate = p.Start!.Value,
             EndDate = p.End,

@@ -125,7 +125,10 @@ public class AddPersonForm : IValidatableObject
                     yield return new ValidationResult("Member of Parliament: select the election cycle or term.", new[] { "Mp.ElectionCycleId" });
                 if (string.IsNullOrEmpty(p.ConstituencyId))
                     yield return new ValidationResult("Member of Parliament: select a region and constituency.", new[] { "Mp.ConstituencyId" });
+                if (string.IsNullOrEmpty(p.AdministrationId))
+                    yield return new ValidationResult("Member of Parliament: select the administration they served under.", new[] { "Mp.AdministrationId" });
             }
+
 
             if (key is "Minister" or "DeputyMinister")
             {

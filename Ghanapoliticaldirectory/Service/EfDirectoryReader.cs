@@ -316,6 +316,7 @@ public sealed partial class EfDirectoryReader : IDirectoryReader
                 Constituency = t.Constituency.Name,
                 RegionId = t.Constituency.RegionId,
                 Region = t.Constituency.Region.Name,
+                AdminName = t.Administration != null ? t.Administration.Name : null,
                 CandidateOk = t.Candidate != null && t.Candidate.Stage == WorkflowStage.Published && !t.Candidate.IsArchived,
                 CandidateParty = t.Candidate != null ? t.Candidate.PartyId : null,
                 SourceTitle = t.Source != null ? t.Source.Title : null,
@@ -353,7 +354,7 @@ public sealed partial class EfDirectoryReader : IDirectoryReader
         {
             var party = t.CandidateOk ? RefOf(t.CandidateParty) : PartyAt(periods, id, t.StartDate);
             var ended = t.EndDate is not null && t.EndDate < today;
-            records.Add(new ServiceRecord("Member of Parliament", "Member of Parliament", $"{t.Constituency} · {t.Region} Region", null,
+            records.Add(new ServiceRecord("Member of Parliament", "Member of Parliament", $"{t.Constituency} · {t.Region} Region", t.AdminName,
                 t.StartDate, t.EndDate, ended ? "Ended" : "Active", party,
                 new Link("Parliament directory", $"/parliament?regionId={t.RegionId}&constituencyId={t.ConstituencyId}"),
                 Src(t.SourceTitle, t.SourceUrl, t.SourcePublished, t.SourceChecked, t.SourceStatus)));

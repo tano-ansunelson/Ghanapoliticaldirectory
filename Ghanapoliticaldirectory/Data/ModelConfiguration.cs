@@ -282,6 +282,7 @@ internal static class ModelConfiguration
             e.HasOne(x => x.Constituency).WithMany().HasForeignKey(x => x.ConstituencyId);
             e.HasOne(x => x.ElectionCycle).WithMany().HasForeignKey(x => x.ElectionCycleId).IsRequired(false);
             e.HasOne(x => x.Candidate).WithMany().HasForeignKey(x => x.CandidateId).IsRequired(false);
+            e.HasOne(x => x.Administration).WithMany().HasForeignKey(x => x.AdministrationId).IsRequired(false);
             e.HasOne(x => x.Source).WithMany().HasForeignKey(x => x.SourceId).IsRequired(false);
             e.HasIndex(x => new { x.ConstituencyId, x.StartDate });
             e.HasIndex(x => x.PersonId);

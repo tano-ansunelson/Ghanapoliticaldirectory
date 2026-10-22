@@ -1076,6 +1076,9 @@ namespace Ghanapoliticaldirectory.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("AdministrationId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("ApprovedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -1165,6 +1168,8 @@ namespace Ghanapoliticaldirectory.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AdministrationId");
 
                     b.HasIndex("CandidateId");
 
@@ -2068,6 +2073,11 @@ namespace Ghanapoliticaldirectory.Migrations
 
             modelBuilder.Entity("Ghanapoliticaldirectory.Models.ParliamentaryTerm", b =>
                 {
+                    b.HasOne("Ghanapoliticaldirectory.Models.Administration", "Administration")
+                        .WithMany()
+                        .HasForeignKey("AdministrationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Ghanapoliticaldirectory.Models.Candidate", "Candidate")
                         .WithMany()
                         .HasForeignKey("CandidateId")
@@ -2094,6 +2104,8 @@ namespace Ghanapoliticaldirectory.Migrations
                         .WithMany()
                         .HasForeignKey("SourceId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Administration");
 
                     b.Navigation("Candidate");
 
