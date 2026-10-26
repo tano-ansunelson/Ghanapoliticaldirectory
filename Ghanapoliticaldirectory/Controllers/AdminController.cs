@@ -120,6 +120,7 @@ public class AdminController : Controller
                     "Speaker" => PositionKind.Speaker,
                     _ => PositionKind.Other
                 },
+
                 Title: p.Title,
                 ElectionCycleId: Int(p.ElectionCycleId),
                 ConstituencyId: Int(p.ConstituencyId),
